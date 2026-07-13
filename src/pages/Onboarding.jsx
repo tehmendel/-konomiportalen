@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 
 export default function Onboarding() {
   const { user, refreshHousehold } = useAuth()
+  const navigate = useNavigate()
   const [mode, setMode] = useState('create')
   const [fullName, setFullName] = useState('')
   const [householdName, setHouseholdName] = useState('')
@@ -22,6 +24,7 @@ export default function Onboarding() {
       })
       if (error) throw error
       await refreshHousehold()
+      navigate('/')
     } catch (err) {
       setError(err.message || 'Kunne ikke opprette husstand')
     } finally {
@@ -40,6 +43,7 @@ export default function Onboarding() {
       })
       if (error) throw error
       await refreshHousehold()
+      navigate('/')
     } catch (err) {
       setError(err.message || 'Ugyldig eller utløpt invitasjon')
     } finally {

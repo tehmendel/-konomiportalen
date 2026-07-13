@@ -9,6 +9,12 @@ export function AuthProvider({ children }) {
   const [household, setHousehold] = useState(null)
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [mfaLevel, setMfaLevel] = useState({ current: null, next: null })
+
+  const refreshMfaLevel = useCallback(async () => {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    setMfaLevel({ current: data?.currentLevel ?? null, next: data?.nextLevel ?? null })
+  }, [])
 
   const loadHousehold = useCallback(async (userId) => {
     const { data: membership } = await supabase
@@ -45,7 +51,7 @@ export function AuthProvider({ children }) {
       if (!active) return
       setSession(session)
       if (session?.user) {
-        await Promise.all([loadProfile(session.user.id), loadHousehold(session.user.id)])
+        await Promise.all([loadProfile(session.user.id), loadHousehold(session.user.id), refreshMfaLevel()])
       }
       setLoading(false)
     })
@@ -53,11 +59,12 @@ export function AuthProvider({ children }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       if (session?.user) {
-        await Promise.all([loadProfile(session.user.id), loadHousehold(session.user.id)])
+        await Promise.all([loadProfile(session.user.id), loadHousehold(session.user.id), refreshMfaLevel()])
       } else {
         setProfile(null)
         setHousehold(null)
         setMembers([])
+        setMfaLevel({ current: null, next: null })
       }
     })
 
@@ -65,13 +72,31 @@ export function AuthProvider({ children }) {
       active = false
       sub.subscription.unsubscribe()
     }
-  }, [loadProfile, loadHousehold])
+  }, [loadProfile, loadHousehold, refreshMfaLevel])
 
-  async function signInWithEmail(email) {
-    const { error } = await supabase.auth.signInWithOtp({
+  async function signIn(email, password) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+  }
+
+  async function signUp(email, password) {
+    const { error } = await supabase.auth.signUp({
       email,
+      password,
       options: { emailRedirectTo: window.location.origin + window.location.pathname },
     })
+    if (error) throw error
+  }
+
+  async function requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname + '#/tilbakestill-passord',
+    })
+    if (error) throw error
+  }
+
+  async function updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
     if (error) throw error
   }
 
@@ -90,7 +115,12 @@ export function AuthProvider({ children }) {
     household,
     members,
     loading,
-    signInWithEmail,
+    mfaLevel,
+    refreshMfaLevel,
+    signIn,
+    signUp,
+    requestPasswordReset,
+    updatePassword,
     signOut,
     refreshHousehold,
   }
