@@ -19,7 +19,7 @@ export function AuthProvider({ children }) {
   const loadHousehold = useCallback(async (userId) => {
     const { data: membership } = await supabase
       .from('household_members')
-      .select('household_id, role, households(id, name)')
+      .select('household_id, role, households(id, name, avatar_url)')
       .eq('user_id', userId)
       .maybeSingle()
 
@@ -29,7 +29,12 @@ export function AuthProvider({ children }) {
       return
     }
 
-    setHousehold({ id: membership.household_id, name: membership.households?.name, role: membership.role })
+    setHousehold({
+      id: membership.household_id,
+      name: membership.households?.name,
+      avatarUrl: membership.households?.avatar_url,
+      role: membership.role,
+    })
 
     const { data: memberRows } = await supabase
       .from('household_members')

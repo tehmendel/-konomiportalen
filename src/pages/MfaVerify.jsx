@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import AuthShell from '../components/AuthShell'
 
 export default function MfaVerify() {
   const { refreshMfaLevel, signOut } = useAuth()
@@ -40,13 +41,9 @@ export default function MfaVerify() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div className="card" style={{ padding: 32, width: 360 }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Tofaktor-verifisering</div>
-        <div style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>
-          Åpne autentiserings-appen din og skriv inn 6-sifret kode.
-        </div>
-        <form onSubmit={handleSubmit}>
+    <AuthShell title="Tofaktor-verifisering" subtitle="Åpne autentiserings-appen din og skriv inn 6-sifret kode.">
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
           <input
             className="form-input"
             required
@@ -56,18 +53,18 @@ export default function MfaVerify() {
             placeholder="123456"
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            style={{ marginBottom: 12, textAlign: 'center', fontSize: 20, letterSpacing: 4 }}
+            style={{ textAlign: 'center', fontSize: 22, letterSpacing: 6, fontWeight: 700 }}
             autoFocus
           />
-          {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-          <button className="btn btn-primary" type="submit" disabled={busy || code.length !== 6} style={{ width: '100%', marginBottom: 8 }}>
-            {busy ? 'Sjekker…' : 'Bekreft'}
-          </button>
-          <button type="button" className="btn" style={{ width: '100%' }} onClick={signOut}>
-            Logg ut
-          </button>
-        </form>
-      </div>
-    </div>
+        </div>
+        {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 'var(--space-3)' }}>{error}</div>}
+        <button className="btn btn-primary btn-block" type="submit" disabled={busy || code.length !== 6} style={{ marginBottom: 'var(--space-2)' }}>
+          {busy ? 'Sjekker…' : 'Bekreft'}
+        </button>
+        <button type="button" className="btn btn-ghost btn-block" onClick={signOut}>
+          Logg ut
+        </button>
+      </form>
+    </AuthShell>
   )
 }

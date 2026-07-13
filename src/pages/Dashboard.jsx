@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { formatKr } from '../lib/format'
 
-const COLORS = ['#4f8cff', '#3ecf8e', '#e6b450', '#e5484d', '#a78bfa', '#f472b6', '#38bdf8', '#fb923c']
+// Dark-mode categorical palette, fixed order (dataviz skill reference palette).
+const COLORS = ['#3987e5', '#199e70', '#c98500', '#008300', '#9085e9', '#e66767', '#d55181', '#d95926']
 
 export default function Dashboard() {
   const { household, user } = useAuth()
@@ -53,35 +54,58 @@ export default function Dashboard() {
   )
 
   const sum = chartData.reduce((acc, r) => acc + r.total, 0)
+  const monthLabel = now.toLocaleDateString('nb-NO', { month: 'long', year: 'numeric' })
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ margin: 0 }}>Oversikt — {now.toLocaleDateString('nb-NO', { month: 'long', year: 'numeric' })}</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className={`btn ${scope === 'household' ? 'btn-primary' : ''}`} onClick={() => setScope('household')}>Husstand</button>
-          <button className={`btn ${scope === 'personal' ? 'btn-primary' : ''}`} onClick={() => setScope('personal')}>Meg</button>
+    <div className="stack">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Oversikt</div>
+          <div className="page-sub" style={{ textTransform: 'capitalize' }}>{monthLabel}</div>
+        </div>
+        <div className="row" style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius-md)', padding: 3 }}>
+          <button
+            className="btn btn-sm"
+            style={{ border: 'none', background: scope === 'household' ? 'var(--surface-3)' : 'transparent' }}
+            onClick={() => setScope('household')}
+          >
+            Husstand
+          </button>
+          <button
+            className="btn btn-sm"
+            style={{ border: 'none', background: scope === 'personal' ? 'var(--surface-3)' : 'transparent' }}
+            onClick={() => setScope('personal')}
+          >
+            Meg
+          </button>
         </div>
       </div>
 
-      <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>Totalt forbruk denne måneden</div>
-        <div style={{ fontSize: 28, fontWeight: 700 }}>{formatKr(sum)}</div>
+      <div className="card card-pad">
+        <div className="stat-label">Totalt forbruk denne måneden</div>
+        <div className="stat-value">{formatKr(sum)}</div>
       </div>
 
-      <div className="card" style={{ padding: 16, height: 360 }}>
+      <div className="card card-pad" style={{ height: 380 }}>
         {loading ? (
           <div className="text-muted">Laster…</div>
         ) : chartData.length === 0 ? (
-          <div className="text-muted">Ingen transaksjoner denne måneden ennå.</div>
+          <div className="empty-state">
+            <div className="empty-state-icon">📊</div>
+            <div>Ingen transaksjoner denne måneden ennå.</div>
+          </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ left: 24 }}>
+            <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 8 }} barCategoryGap={10}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-              <XAxis type="number" stroke="var(--muted)" tickFormatter={(v) => `${v} kr`} />
-              <YAxis type="category" dataKey="name" width={140} stroke="var(--muted)" />
-              <Tooltip formatter={(v) => formatKr(v)} contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }} />
-              <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+              <XAxis type="number" stroke="var(--muted)" fontSize={11} tickFormatter={(v) => `${v} kr`} />
+              <YAxis type="category" dataKey="name" width={130} stroke="var(--muted)" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip
+                formatter={(v) => formatKr(v)}
+                cursor={{ fill: 'var(--surface-2)' }}
+                contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
+              />
+              <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={22}>
                 {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
             </BarChart>

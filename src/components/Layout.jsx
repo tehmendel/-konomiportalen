@@ -1,50 +1,75 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import Avatar from './Avatar'
+import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon } from './icons'
 
-const links = [
-  { to: '/', label: 'Oversikt', end: true },
-  { to: '/transaksjoner', label: 'Transaksjoner' },
-  { to: '/kontoer', label: 'Kontoer' },
-  { to: '/kategorier', label: 'Kategorier' },
-  { to: '/importer', label: 'Importer' },
-  { to: '/innstillinger', label: 'Innstillinger' },
+const sidebarLinks = [
+  { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
+  { to: '/transaksjoner', label: 'Transaksjoner', Icon: ListIcon },
+  { to: '/kontoer', label: 'Kontoer', Icon: WalletIcon },
+  { to: '/kategorier', label: 'Kategorier', Icon: TagIcon },
+  { to: '/importer', label: 'Importer', Icon: UploadIcon },
+  { to: '/innstillinger', label: 'Innstillinger', Icon: GearIcon },
+]
+
+const tabLinks = [
+  { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
+  { to: '/transaksjoner', label: 'Transaksjoner', Icon: ListIcon },
+  { to: '/kontoer', label: 'Kontoer', Icon: WalletIcon },
+  { to: '/importer', label: 'Importer', Icon: UploadIcon },
+  { to: '/innstillinger', label: 'Innstillinger', Icon: GearIcon },
 ]
 
 export default function Layout() {
   const { profile, household, signOut } = useAuth()
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <nav style={{ width: 200, borderRight: '1px solid var(--border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ fontWeight: 700, marginBottom: 16 }}>Økonomiportalen</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>{household?.name}</div>
-        {links.map((l) => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            end={l.end}
-            style={({ isActive }) => ({
-              padding: '8px 10px',
-              borderRadius: 6,
-              textDecoration: 'none',
-              color: isActive ? '#fff' : 'var(--text)',
-              background: isActive ? 'var(--accent)' : 'transparent',
-              fontSize: 14,
-            })}
-          >
+    <div className="app-shell">
+      <nav className="sidebar">
+        <div className="row" style={{ marginBottom: 'var(--space-5)', padding: '0 var(--space-1)' }}>
+          <Avatar src={household?.avatarUrl} name={household?.name} size="avatar-sm" />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {household?.name}
+            </div>
+          </div>
+        </div>
+
+        {sidebarLinks.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <l.Icon width={18} height={18} />
             {l.label}
           </NavLink>
         ))}
-        <div style={{ marginTop: 'auto', fontSize: 12, color: 'var(--muted)' }}>
-          <div>{profile?.full_name}</div>
-          <button className="btn" style={{ marginTop: 8, width: '100%' }} onClick={signOut}>
+
+        <div style={{ marginTop: 'auto', paddingTop: 'var(--space-4)', borderTop: '1px solid var(--border)' }}>
+          <div className="row" style={{ padding: '0 var(--space-1)', marginBottom: 'var(--space-2)' }}>
+            <Avatar name={profile?.full_name} size="avatar-sm" />
+            <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {profile?.full_name}
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-block" onClick={signOut}>
+            <LogoutIcon width={16} height={16} />
             Logg ut
           </button>
         </div>
       </nav>
-      <main style={{ flex: 1, padding: 24 }}>
-        <Outlet />
+
+      <main className="app-main">
+        <div className="page">
+          <Outlet />
+        </div>
       </main>
+
+      <nav className="tab-bar">
+        {tabLinks.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => `tab-link${isActive ? ' active' : ''}`}>
+            <l.Icon width={22} height={22} />
+            {l.label}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   )
 }

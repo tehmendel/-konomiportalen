@@ -180,60 +180,83 @@ export default function Import() {
   }
 
   return (
-    <div>
-      <h2>Importer kontoutskrift</h2>
+    <div className="stack">
+      <div className="page-title">Importer kontoutskrift</div>
 
-      <div className="card" style={{ padding: 16, marginBottom: 16, maxWidth: 480 }}>
-        <label style={{ fontSize: 12, color: 'var(--muted)' }}>Konto</label>
-        <select className="form-select" value={accountId} onChange={(e) => setAccountId(e.target.value)} style={{ marginBottom: 12, marginTop: 4 }}>
-          <option value="">Velg konto…</option>
-          {accounts.map((a) => <option key={a.id} value={a.id}>{a.display_name} ({a.institution})</option>)}
-        </select>
-        <input ref={inputRef} type="file" accept=".csv,.txt,.pdf" disabled={busy}
-          onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8 }}>
+      <div className="card card-pad stack">
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Konto</label>
+          <select className="form-select" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+            <option value="">Velg konto…</option>
+            {accounts.map((a) => <option key={a.id} value={a.id}>{a.display_name} ({a.institution})</option>)}
+          </select>
+        </div>
+
+        <label
+          className="row"
+          style={{
+            border: '1.5px dashed var(--border-strong)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-4)',
+            justifyContent: 'center',
+            cursor: busy ? 'not-allowed' : 'pointer',
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          <input ref={inputRef} type="file" accept=".csv,.txt,.pdf" disabled={busy} style={{ display: 'none' }}
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+          <span style={{ fontSize: 14, fontWeight: 600 }}>📄 Velg fil å importere</span>
+        </label>
+        <div className="text-muted" style={{ fontSize: 12 }}>
           CSV eksportert fra nettbanken (raskest, tolkes lokalt) eller PDF-kontoutskrift (tolkes av AI — brukes for kilder uten CSV-eksport, f.eks. SAS Mastercard/Nordnet).
         </div>
       </div>
 
-      {status && <div className="text-muted" style={{ marginBottom: 12 }}>{status}</div>}
-      {error && <div style={{ color: 'var(--red)', marginBottom: 12 }}>{error}</div>}
-      {done > 0 && <div className="card" style={{ padding: 16, marginBottom: 16, color: 'var(--green)' }}>{done} transaksjoner importert.</div>}
+      {status && <div className="text-muted" style={{ fontSize: 13 }}>{status}</div>}
+      {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
+      {done > 0 && (
+        <div className="card card-pad" style={{ color: 'var(--green)', fontWeight: 600 }}>✓ {done} transaksjoner importert.</div>
+      )}
 
       {rows.length > 0 && (
         <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <table>
-              <thead>
-                <tr>
-                  <th />
-                  <th>Dato</th>
-                  <th>Beskrivelse</th>
-                  <th className="text-right">Beløp</th>
-                  <th>Kategori</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r._id} style={{ opacity: r.selected ? 1 : 0.4 }}>
-                    <td><input type="checkbox" checked={r.selected} onChange={(e) => updateRow(r._id, 'selected', e.target.checked)} /></td>
-                    <td className="text-muted">{r.date}</td>
-                    <td>{r.description} {r.duplicate && <span style={{ fontSize: 10, background: 'var(--yellow)', color: '#000', borderRadius: 4, padding: '1px 5px', marginLeft: 6 }}>duplikat</span>}</td>
-                    <td className="text-right">
-                      <span className={r.type === 'inntekt' ? 'amount-positive' : 'amount-negative'}>{r.type === 'utgift' ? '−' : '+'}{formatKr(r.amount)}</span>
-                    </td>
-                    <td>
-                      <select className="form-select" value={r.category_id || ''} onChange={(e) => updateRow(r._id, 'category_id', e.target.value || null)}>
-                        <option value="">Ingen</option>
-                        {categories.filter((c) => c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                    </td>
+          <div className="card">
+            <div className="table-wrap">
+              <table className="list-table">
+                <thead>
+                  <tr>
+                    <th />
+                    <th>Dato</th>
+                    <th>Beskrivelse</th>
+                    <th className="text-right">Beløp</th>
+                    <th>Kategori</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r._id} className="list-row" style={{ opacity: r.selected ? 1 : 0.4 }}>
+                      <td data-label="Velg"><input type="checkbox" checked={r.selected} onChange={(e) => updateRow(r._id, 'selected', e.target.checked)} /></td>
+                      <td data-label="Dato" className="text-muted">{r.date}</td>
+                      <td className="list-primary">
+                        {r.description}
+                        {r.duplicate && <span className="badge badge-yellow" style={{ marginLeft: 6 }}>duplikat</span>}
+                      </td>
+                      <td data-label="Beløp" className="text-right">
+                        <span className={r.type === 'inntekt' ? 'amount-positive' : 'amount-negative'}>{r.type === 'utgift' ? '−' : '+'}{formatKr(r.amount)}</span>
+                      </td>
+                      <td data-label="Kategori">
+                        <select className="form-select" value={r.category_id || ''} onChange={(e) => updateRow(r._id, 'category_id', e.target.value || null)}>
+                          <option value="">Ingen</option>
+                          {categories.filter((c) => c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <button className="btn btn-primary" disabled={importing || rows.filter((r) => r.selected).length === 0} onClick={commitImport}>
+          <button className="btn btn-primary btn-block" disabled={importing || rows.filter((r) => r.selected).length === 0} onClick={commitImport}>
             {importing ? 'Importerer…' : `Importer ${rows.filter((r) => r.selected).length} transaksjoner`}
           </button>
         </>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import AuthShell from '../components/AuthShell'
 
 export default function Onboarding() {
   const { user, refreshHousehold } = useAuth()
@@ -52,43 +53,47 @@ export default function Onboarding() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div className="card" style={{ padding: 32, width: 400 }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Velkommen, {user?.email}</div>
-
-        <div className="flex" style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-          <button className={`btn ${mode === 'create' ? 'btn-primary' : ''}`} onClick={() => setMode('create')}>
-            Opprett husstand
-          </button>
-          <button className={`btn ${mode === 'join' ? 'btn-primary' : ''}`} onClick={() => setMode('join')}>
-            Bli med i husstand
-          </button>
-        </div>
-
-        {mode === 'create' ? (
-          <form onSubmit={handleCreate}>
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Ditt navn</label>
-            <input className="form-input" required value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ marginBottom: 12, marginTop: 4 }} />
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Navn på husstanden</label>
-            <input className="form-input" required placeholder="F.eks. Familien Bøe" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} style={{ marginBottom: 16, marginTop: 4 }} />
-            {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%' }}>
-              {busy ? 'Oppretter…' : 'Opprett'}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleJoin}>
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Ditt navn</label>
-            <input className="form-input" required value={fullName} onChange={(e) => setFullName(e.target.value)} style={{ marginBottom: 12, marginTop: 4 }} />
-            <label style={{ fontSize: 12, color: 'var(--muted)' }}>Invitasjonskode</label>
-            <input className="form-input" required value={inviteToken} onChange={(e) => setInviteToken(e.target.value)} style={{ marginBottom: 16, marginTop: 4 }} />
-            {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%' }}>
-              {busy ? 'Blir med…' : 'Bli med'}
-            </button>
-          </form>
-        )}
+    <AuthShell title={`Velkommen, ${user?.email}`} subtitle="Opprett en ny husstand, eller bli med i en du er invitert til.">
+      <div className="row" style={{ marginBottom: 'var(--space-4)' }}>
+        <button className={`btn ${mode === 'create' ? 'btn-primary' : ''}`} style={{ flex: 1 }} onClick={() => setMode('create')}>
+          Opprett husstand
+        </button>
+        <button className={`btn ${mode === 'join' ? 'btn-primary' : ''}`} style={{ flex: 1 }} onClick={() => setMode('join')}>
+          Bli med
+        </button>
       </div>
-    </div>
+
+      {mode === 'create' ? (
+        <form onSubmit={handleCreate}>
+          <div className="form-group">
+            <label className="form-label">Ditt navn</label>
+            <input className="form-input" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Navn på husstanden</label>
+            <input className="form-input" required placeholder="F.eks. Familien Bøe" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} />
+          </div>
+          {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 'var(--space-3)' }}>{error}</div>}
+          <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
+            {busy ? 'Oppretter…' : 'Opprett'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleJoin}>
+          <div className="form-group">
+            <label className="form-label">Ditt navn</label>
+            <input className="form-input" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Invitasjonskode</label>
+            <input className="form-input" required value={inviteToken} onChange={(e) => setInviteToken(e.target.value)} />
+          </div>
+          {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 'var(--space-3)' }}>{error}</div>}
+          <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
+            {busy ? 'Blir med…' : 'Bli med'}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   )
 }

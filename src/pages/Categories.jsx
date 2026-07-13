@@ -54,24 +54,23 @@ export default function Categories() {
   }
 
   return (
-    <div>
-      <h2>Kategorier</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        <div>
-          <div className="card" style={{ padding: 16 }}>
-            <table>
-              <thead><tr><th>Navn</th><th>Type</th></tr></thead>
-              <tbody>
-                {categories.map((c) => (
-                  <tr key={c.id}><td>{c.name}</td><td className="text-muted">{c.type}</td></tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="stack">
+      <div className="page-title">Kategorier</div>
+      <div className="two-col">
+        <div className="stack">
+          <div className="section-title">Kategorier</div>
+          <div className="card">
+            {categories.map((c) => (
+              <div key={c.id} className="row-between" style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--border)' }}>
+                <span>{c.name}</span>
+                <span className={`badge ${c.type === 'inntekt' ? 'badge-green' : 'badge-neutral'}`}>{c.type}</span>
+              </div>
+            ))}
           </div>
-          <form onSubmit={addCategory} className="card" style={{ padding: 16, marginTop: 12, display: 'flex', gap: 8 }}>
-            <input className="form-input" placeholder="Ny kategori" value={newCategory.name}
+          <form onSubmit={addCategory} className="card card-pad row">
+            <input className="form-input grow" placeholder="Ny kategori" value={newCategory.name}
               onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })} />
-            <select className="form-select" style={{ width: 140 }} value={newCategory.type}
+            <select className="form-select" style={{ width: 120, flexShrink: 0 }} value={newCategory.type}
               onChange={(e) => setNewCategory({ ...newCategory, type: e.target.value })}>
               <option value="utgift">Utgift</option>
               <option value="inntekt">Inntekt</option>
@@ -80,22 +79,22 @@ export default function Categories() {
           </form>
         </div>
 
-        <div>
-          <div className="card" style={{ padding: 16 }}>
-            <table>
-              <thead><tr><th>Tekst inneholder</th><th>Kategori</th><th /></tr></thead>
-              <tbody>
-                {rules.map((r) => (
-                  <tr key={r.id}>
-                    <td className="text-mono">{r.match_value}</td>
-                    <td>{r.categories?.name}</td>
-                    <td><button className="btn" onClick={() => removeRule(r.id)}>Fjern</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="stack">
+          <div className="section-title">Kategoriseringsregler</div>
+          <div className="card">
+            {rules.length === 0 ? (
+              <div className="empty-state">Ingen regler ennå.</div>
+            ) : rules.map((r) => (
+              <div key={r.id} className="row-between" style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="text-mono" style={{ fontSize: 13 }}>{r.match_value}</div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>{r.categories?.name}</div>
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => removeRule(r.id)}>Fjern</button>
+              </div>
+            ))}
           </div>
-          <form onSubmit={addRule} className="card" style={{ padding: 16, marginTop: 12, display: 'grid', gap: 8 }}>
+          <form onSubmit={addRule} className="card card-pad stack">
             <input className="form-input" placeholder="F.eks. RIMI, BOLIGKREDITT, IMEDIATE" value={newRule.match_value}
               onChange={(e) => setNewRule({ ...newRule, match_value: e.target.value })} />
             <select className="form-select" value={newRule.category_id}

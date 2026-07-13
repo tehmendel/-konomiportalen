@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import AuthShell from '../components/AuthShell'
 
 export default function ResetPassword() {
   const { updatePassword } = useAuth()
@@ -26,13 +27,12 @@ export default function ResetPassword() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div className="card" style={{ padding: 32, width: 360 }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>Sett nytt passord</div>
-        {done ? (
-          <div style={{ fontSize: 14 }}>Passord oppdatert — sender deg videre…</div>
-        ) : (
-          <form onSubmit={handleSubmit}>
+    <AuthShell title="Sett nytt passord">
+      {done ? (
+        <div style={{ fontSize: 14, textAlign: 'center' }}>Passord oppdatert — sender deg videre…</div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
             <input
               className="form-input"
               type="password"
@@ -42,15 +42,14 @@ export default function ResetPassword() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              style={{ marginBottom: 12 }}
             />
-            {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 12 }}>{error}</div>}
-            <button className="btn btn-primary" type="submit" disabled={busy} style={{ width: '100%' }}>
-              {busy ? 'Lagrer…' : 'Lagre nytt passord'}
-            </button>
-          </form>
-        )}
-      </div>
-    </div>
+          </div>
+          {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 'var(--space-3)' }}>{error}</div>}
+          <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
+            {busy ? 'Lagrer…' : 'Lagre nytt passord'}
+          </button>
+        </form>
+      )}
+    </AuthShell>
   )
 }
