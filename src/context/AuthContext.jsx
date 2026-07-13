@@ -83,14 +83,14 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin + window.location.pathname },
+      options: { emailRedirectTo: window.location.origin + import.meta.env.BASE_URL },
     })
     if (error) throw error
   }
 
   async function requestPasswordReset(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + window.location.pathname + '#/tilbakestill-passord',
+      redirectTo: window.location.origin + import.meta.env.BASE_URL + 'tilbakestill-passord',
     })
     if (error) throw error
   }
