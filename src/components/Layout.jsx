@@ -1,14 +1,18 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Avatar from './Avatar'
-import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon } from './icons'
+import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon } from './icons'
 
 const sidebarLinks = [
   { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
+  { to: '/formue', label: 'Formue', Icon: CoinsIcon },
+  { to: '/investeringer', label: 'Investeringer', Icon: TrendingUpIcon },
   { to: '/transaksjoner', label: 'Transaksjoner', Icon: ListIcon },
   { to: '/kontoer', label: 'Kontoer', Icon: WalletIcon },
+  { to: '/faste-utgifter', label: 'Faste utgifter', Icon: RepeatIcon },
   { to: '/kategorier', label: 'Kategorier', Icon: TagIcon },
   { to: '/importer', label: 'Importer', Icon: UploadIcon },
+  { to: '/skatt', label: 'Skatt', Icon: ReceiptIcon },
   { to: '/innstillinger', label: 'Innstillinger', Icon: GearIcon },
 ]
 

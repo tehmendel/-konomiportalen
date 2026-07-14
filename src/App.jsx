@@ -11,6 +11,10 @@ import Transactions from './pages/Transactions'
 import Categories from './pages/Categories'
 import Import from './pages/Import'
 import Settings from './pages/Settings'
+import Wealth from './pages/Wealth'
+import Investments from './pages/Investments'
+import RecurringExpenses from './pages/RecurringExpenses'
+import Tax from './pages/Tax'
 
 function needsMfaChallenge(mfaLevel) {
   return Boolean(mfaLevel.current && mfaLevel.next && mfaLevel.current !== mfaLevel.next)
@@ -75,6 +79,10 @@ function AppRoutes() {
         <Route path="transaksjoner" element={<Transactions />} />
         <Route path="kategorier" element={<Categories />} />
         <Route path="importer" element={<Import />} />
+        <Route path="formue" element={<Wealth />} />
+        <Route path="investeringer" element={<Investments />} />
+        <Route path="faste-utgifter" element={<RecurringExpenses />} />
+        <Route path="skatt" element={<Tax />} />
         <Route path="innstillinger" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

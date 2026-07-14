@@ -24,3 +24,15 @@ export const LogoutIcon = (p) => (
 export const CameraIcon = (p) => (
   <svg viewBox="0 0 24 24" {...base} {...p}><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-2h7l1 2h2a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5Z" /><circle cx="12" cy="13" r="3.4" /></svg>
 )
+export const CoinsIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><ellipse cx="9" cy="7" rx="6" ry="3" /><path d="M3 7v5c0 1.66 2.69 3 6 3s6-1.34 6-3V7" /><path d="M3 12v5c0 1.66 2.69 3 6 3 2.13 0 4-.67 5.16-1.7" /><ellipse cx="16" cy="13" rx="5" ry="2.6" /><path d="M11 15.6v2c0 1.44 2.24 2.6 5 2.6s5-1.16 5-2.6v-2" /></svg>
+)
+export const TrendingUpIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><path d="M3 17 9.5 10l4 4L21 6" /><path d="M15 6h6v6" /></svg>
+)
+export const RepeatIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><path d="M4 12a7 7 0 0 1 7-7h9" /><path d="M17 2l3 3-3 3" /><path d="M20 12a7 7 0 0 1-7 7H4" /><path d="M7 22l-3-3 3-3" /></svg>
+)
+export const ReceiptIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.5V3Z" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>
+)
