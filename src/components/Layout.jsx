@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Avatar from './Avatar'
 import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon } from './icons'
+import { APP_VERSION } from '../version'
 
 const sidebarLinks = [
   { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
@@ -57,6 +58,7 @@ export default function Layout() {
             <LogoutIcon width={16} height={16} />
             Logg ut
           </button>
+          <div className="text-muted" style={{ fontSize: 11, textAlign: 'center', marginTop: 'var(--space-2)' }}>v{APP_VERSION}</div>
         </div>
       </nav>
 
