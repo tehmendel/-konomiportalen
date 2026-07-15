@@ -230,7 +230,7 @@ export default function Vendors() {
 
       <div className="card card-pad" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         <strong style={{ color: 'var(--text)' }}>Auto-godkjenn:</strong> når aktivert brukes leverandørens kategoriforslag automatisk ved import, uansett konfidens.
-        Konfidensen øker med 3 prosentpoeng hver gang forslaget bekreftes riktig, og resettes til 60% når det overstyres.
+        Konfidensen øker med 20 prosentpoeng hver gang forslaget bekreftes riktig, og resettes til 60% når det overstyres.
       </div>
     </div>
   )

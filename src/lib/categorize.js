@@ -100,7 +100,7 @@ export async function learnFromOutcome({ householdId, description, suggestedCate
   if (existing && existing.suggested_category_id === finalCategoryId) {
     await supabase.from('vendors').update({
       transaction_count: existing.transaction_count + 1,
-      confidence: Math.min(0.99, Number(existing.confidence) + 0.03),
+      confidence: Math.min(0.99, Number(existing.confidence) + 0.2),
       last_seen: new Date().toISOString().slice(0, 10),
     }).eq('id', existing.id)
   } else if (existing) {
