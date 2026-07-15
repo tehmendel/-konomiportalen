@@ -36,12 +36,20 @@ export function AuthProvider({ children }) {
       role: membership.role,
     })
 
+    // household_members.user_id and profiles.id both reference auth.users(id)
+    // independently, so PostgREST can't embed profiles directly — fetch and merge instead.
     const { data: memberRows } = await supabase
       .from('household_members')
-      .select('user_id, role, profiles(id, full_name)')
+      .select('user_id, role')
       .eq('household_id', membership.household_id)
 
-    setMembers(memberRows || [])
+    const memberIds = (memberRows || []).map((m) => m.user_id)
+    const { data: memberProfiles } = memberIds.length
+      ? await supabase.from('profiles').select('id, full_name').in('id', memberIds)
+      : { data: [] }
+    const profileById = Object.fromEntries((memberProfiles || []).map((p) => [p.id, p]))
+
+    setMembers((memberRows || []).map((m) => ({ ...m, profiles: profileById[m.user_id] || null })))
   }, [])
 
   const loadProfile = useCallback(async (userId) => {

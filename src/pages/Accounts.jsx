@@ -33,8 +33,17 @@ function AssetsCard() {
 
   async function load() {
     setLoading(true)
-    const { data } = await supabase.from('assets').select('*, profiles:owner_id(full_name)').order('created_at', { ascending: true })
-    setAssets(data || [])
+    const { data } = await supabase.from('assets').select('*').order('created_at', { ascending: true })
+
+    // assets.owner_id and profiles.id both reference auth.users(id)
+    // independently, so PostgREST can't embed profiles directly — fetch and merge instead.
+    const ownerIds = [...new Set((data || []).map((a) => a.owner_id))]
+    const { data: profiles } = ownerIds.length
+      ? await supabase.from('profiles').select('id, full_name').in('id', ownerIds)
+      : { data: [] }
+    const profileById = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+    setAssets((data || []).map((a) => ({ ...a, profiles: profileById[a.owner_id] || null })))
     setLoading(false)
   }
 
@@ -168,7 +177,7 @@ export default function Accounts() {
     setLoading(true)
     const { data } = await supabase
       .from('accounts')
-      .select('*, profiles:owner_id(full_name)')
+      .select('*')
       .order('created_at', { ascending: true })
     setAccounts(data || [])
     setLoading(false)

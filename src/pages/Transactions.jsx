@@ -16,12 +16,21 @@ export default function Transactions() {
     const [{ data: tx }, { data: cats }] = await Promise.all([
       supabase
         .from('transactions')
-        .select('*, categories(name), accounts(display_name), profiles:owner_id(full_name)')
+        .select('*, categories(name), accounts(display_name)')
         .order('date', { ascending: false })
         .limit(500),
       supabase.from('categories').select('*'),
     ])
-    setTransactions(tx || [])
+
+    // transactions.owner_id and profiles.id both reference auth.users(id)
+    // independently, so PostgREST can't embed profiles directly — fetch and merge instead.
+    const ownerIds = [...new Set((tx || []).map((t) => t.owner_id))]
+    const { data: profiles } = ownerIds.length
+      ? await supabase.from('profiles').select('id, full_name').in('id', ownerIds)
+      : { data: [] }
+    const profileById = Object.fromEntries((profiles || []).map((p) => [p.id, p]))
+
+    setTransactions((tx || []).map((t) => ({ ...t, profiles: profileById[t.owner_id] || null })))
     setCategories(cats || [])
     setLoading(false)
   }
