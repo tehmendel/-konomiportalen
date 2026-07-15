@@ -38,7 +38,7 @@ const tabLinks = [
 ]
 
 export default function Layout() {
-  const { profile, household, signOut } = useAuth()
+  const { profile, household, signOut, impersonating, stopImpersonation, realProfile } = useAuth()
   const location = useLocation()
   const childPaths = transactionsGroup.children.map((c) => c.to)
   const groupActive = location.pathname === transactionsGroup.to || childPaths.includes(location.pathname)
@@ -47,7 +47,14 @@ export default function Layout() {
   useEffect(() => { if (groupActive) setOpen(true) }, [groupActive])
 
   return (
-    <div className="app-shell">
+    <div className="app-root">
+      {impersonating && (
+        <div className="impersonation-banner">
+          <span>👁 {realProfile?.full_name} innlogget som <strong>{impersonating.fullName}</strong></span>
+          <button className="btn btn-sm" onClick={stopImpersonation}>Avslutt visning</button>
+        </div>
+      )}
+      <div className="app-shell">
       <nav className="sidebar">
         <div className="row" style={{ marginBottom: 'var(--space-5)', padding: '0 var(--space-1)' }}>
           <Avatar src={household?.avatarUrl} name={household?.name} size="avatar-sm" />
@@ -105,10 +112,12 @@ export default function Layout() {
               {profile?.full_name}
             </div>
           </div>
-          <button className="btn btn-ghost btn-block" onClick={signOut}>
-            <LogoutIcon width={16} height={16} />
-            Logg ut
-          </button>
+          {!impersonating && (
+            <button className="btn btn-ghost btn-block" onClick={signOut}>
+              <LogoutIcon width={16} height={16} />
+              Logg ut
+            </button>
+          )}
           <div className="text-muted" style={{ fontSize: 11, textAlign: 'center', marginTop: 'var(--space-2)' }}>v{APP_VERSION}</div>
         </div>
       </nav>
@@ -139,6 +148,7 @@ export default function Layout() {
           </NavLink>
         ))}
       </nav>
+      </div>
     </div>
   )
 }

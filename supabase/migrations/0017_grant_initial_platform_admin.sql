@@ -1,0 +1,10 @@
+-- Tildeler platform-admin til husstandens opprinnelige eier.
+--
+-- Bevisst IKKE en kjørbar insert i denne filen: dette repoet er offentlig,
+-- og hverken navn, e-post eller bruker-ID hører hjemme i kildekoden — den
+-- typen informasjon skal kun finnes i databasen. Admin-tildeling skjer alltid
+-- manuelt via SQL/dashboard mot den faktiske bruker-IDen, aldri via appen
+-- selv og aldri committet her.
+--
+-- Mønster (kjør manuelt, med den faktiske bruker-IDen fra auth.users):
+--   insert into platform_admins (user_id) values ('<uuid>') on conflict (user_id) do nothing;

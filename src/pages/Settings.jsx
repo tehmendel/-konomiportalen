@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import Avatar from '../components/Avatar'
 import { CameraIcon } from '../components/icons'
+import ImpersonateModal from '../components/ImpersonateModal'
 
 function HouseholdCard() {
   const { household, refreshHousehold } = useAuth()
@@ -292,17 +293,43 @@ function MfaSettings() {
   )
 }
 
+function AdminCard() {
+  const { isPlatformAdmin, impersonating, stopImpersonation } = useAuth()
+  const [showModal, setShowModal] = useState(false)
+
+  if (!isPlatformAdmin) return null
+
+  return (
+    <div className="card card-pad">
+      <div className="section-title">Platform-admin</div>
+      <div className="text-muted" style={{ fontSize: 13, marginBottom: 'var(--space-3)' }}>
+        Skrivebeskyttet forhåndsvisning av appen som en annen bruker, på tvers av husstander. Hver visning logges.
+      </div>
+      {impersonating ? (
+        <div className="row-between">
+          <span className="badge badge-accent">Ser som {impersonating.fullName}</span>
+          <button className="btn btn-ghost btn-sm" onClick={stopImpersonation}>Avslutt visning</button>
+        </div>
+      ) : (
+        <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>Se som bruker…</button>
+      )}
+      {showModal && <ImpersonateModal onClose={() => setShowModal(false)} onStarted={() => setShowModal(false)} />}
+    </div>
+  )
+}
+
 export default function Settings() {
-  const { signOut } = useAuth()
+  const { signOut, impersonating } = useAuth()
 
   return (
     <div className="stack">
       <div className="page-title">Innstillinger</div>
+      <AdminCard />
       <HouseholdCard />
       <MembersCard />
       <InviteCard />
       <MfaSettings />
-      <button className="btn btn-danger btn-block" onClick={signOut}>Logg ut</button>
+      {!impersonating && <button className="btn btn-danger btn-block" onClick={signOut}>Logg ut</button>}
     </div>
   )
 }

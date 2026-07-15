@@ -490,15 +490,35 @@ tr:last-child td { border-bottom: none; }
 
 /* ── App shell: sidebar (desktop) / bottom tab bar (mobile) ───── */
 
-.app-shell {
+.app-root {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
 
+.app-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 @media (min-width: 768px) {
   .app-shell { flex-direction: row; }
+}
+
+.impersonation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  background: var(--yellow-soft);
+  border-bottom: 1px solid var(--yellow);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .app-main {
