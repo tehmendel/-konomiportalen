@@ -446,6 +446,7 @@ export default function Transactions() {
                   <th>Kategori</th>
                   <th>Type</th>
                   <th className="text-right">Beløp</th>
+                  <th style={{ width: 44 }} />
                   <th />
                 </tr>
               </thead>
@@ -476,9 +477,11 @@ export default function Transactions() {
                         {t.type === 'utgift' ? '−' : '+'}{formatKr(t.amount)}
                       </span>
                     </td>
+                    <td data-label="" style={{ textAlign: 'center' }}>
+                      <button className="btn btn-ghost btn-icon-sm" title="Vis detaljer" onClick={() => setDetailTx(t)}>👁</button>
+                    </td>
                     <td data-label="">
                       <div className="row" style={{ flexWrap: 'nowrap' }}>
-                        <button className="btn btn-ghost btn-sm" title="Vis detaljer" onClick={() => setDetailTx(t)}>👁</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => { setEditItem(t); setShowModal(true) }}>Rediger</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => deleteTransaction(t.id)}>Slett</button>
                       </div>

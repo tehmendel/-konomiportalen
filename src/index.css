@@ -198,6 +198,7 @@ a {
 .btn-sm { min-height: 36px; padding: 0 var(--space-3); font-size: 13px; }
 .btn-block { width: 100%; }
 .btn-icon { min-height: 40px; min-width: 40px; padding: 0; border-radius: var(--radius-full); }
+.btn-icon-sm { min-height: 32px; min-width: 32px; padding: 0; border-radius: var(--radius-full); font-size: 13px; }
 
 /* ── Forms ──────────────────────────────────────────────────────── */
 

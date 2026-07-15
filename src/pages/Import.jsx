@@ -364,6 +364,7 @@ export default function Import() {
                     <th>Beskrivelse</th>
                     <th className="text-right">Beløp</th>
                     <th>Kategori</th>
+                    <th style={{ width: 44 }} />
                     <th>Kilde</th>
                   </tr>
                 </thead>
@@ -388,14 +389,13 @@ export default function Import() {
                           {categories.filter((c) => c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </td>
+                      <td data-label="" style={{ textAlign: 'center' }}>
+                        <button type="button" className="btn btn-ghost btn-icon-sm" title="Vis parsede data" onClick={() => setDetailRow(r)}>👁</button>
+                      </td>
                       <td data-label="Kilde">
-                        <div className="row" style={{ flexWrap: 'nowrap', gap: 6 }}>
-                          {SOURCE_LABELS[r.source] && (
-                            <span className={`badge ${SOURCE_LABELS[r.source].badge}`}>{SOURCE_LABELS[r.source].label}</span>
-                          )}
-                          <button type="button" className="btn btn-ghost btn-sm" style={{ minHeight: 28, padding: '0 8px' }}
-                            title="Vis parsede data" onClick={() => setDetailRow(r)}>👁</button>
-                        </div>
+                        {SOURCE_LABELS[r.source] && (
+                          <span className={`badge ${SOURCE_LABELS[r.source].badge}`}>{SOURCE_LABELS[r.source].label}</span>
+                        )}
                       </td>
                     </tr>
                   ))}
