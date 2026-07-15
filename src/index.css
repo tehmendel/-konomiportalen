@@ -525,6 +525,43 @@ tr:last-child td { border-bottom: none; }
 .nav-link:hover { background: var(--surface-2); color: var(--text); }
 .nav-link.active { background: var(--accent-soft); color: var(--accent); }
 
+.nav-group { display: flex; align-items: center; border-radius: var(--radius-md); }
+.nav-group .nav-link { flex: 1; min-width: 0; }
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 44px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+.nav-group-toggle:hover { background: var(--surface-2); color: var(--text); }
+.nav-group-toggle svg { transition: transform 0.15s ease; }
+.nav-group-toggle.open svg { transform: rotate(90deg); }
+
+.nav-sublist { display: flex; flex-direction: column; gap: 2px; padding-left: 26px; margin: 2px 0 4px; }
+.nav-sublink {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav-sublink:hover { background: var(--surface-2); color: var(--text); }
+.nav-sublink.active { background: var(--accent-soft); color: var(--accent); }
+
+.nav-divider { height: 1px; background: var(--border); margin: var(--space-3) var(--space-1); }
+
 .tab-bar {
   position: fixed;
   bottom: 0;

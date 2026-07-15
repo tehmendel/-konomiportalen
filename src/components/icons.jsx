@@ -39,3 +39,6 @@ export const ReceiptIcon = (p) => (
 export const StoreIcon = (p) => (
   <svg viewBox="0 0 24 24" {...base} {...p}><path d="M4 9.5 5 4h14l1 5.5" /><path d="M4 9.5a2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0" /><path d="M5.5 11v8.5A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V11" /><path d="M10 21v-5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5V21" /></svg>
 )
+export const ChevronRightIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><path d="M9 5.5 15.5 12 9 18.5" /></svg>
+)

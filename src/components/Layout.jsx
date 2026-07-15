@@ -1,20 +1,31 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Avatar from './Avatar'
-import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon, StoreIcon } from './icons'
+import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon, StoreIcon, ChevronRightIcon } from './icons'
 import { APP_VERSION } from '../version'
 
-const sidebarLinks = [
+const topLinks = [
   { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
   { to: '/formue', label: 'Formue', Icon: CoinsIcon },
   { to: '/investeringer', label: 'Investeringer', Icon: TrendingUpIcon },
-  { to: '/transaksjoner', label: 'Transaksjoner', Icon: ListIcon },
-  { to: '/kontoer', label: 'Kontoer', Icon: WalletIcon },
-  { to: '/faste-utgifter', label: 'Faste utgifter', Icon: RepeatIcon },
-  { to: '/kategorier', label: 'Kategorier', Icon: TagIcon },
-  { to: '/leverandorer', label: 'Leverandører', Icon: StoreIcon },
-  { to: '/importer', label: 'Importer', Icon: UploadIcon },
   { to: '/skatt', label: 'Skatt', Icon: ReceiptIcon },
+]
+
+const transactionsGroup = {
+  to: '/transaksjoner',
+  label: 'Transaksjoner',
+  Icon: ListIcon,
+  children: [
+    { to: '/faste-utgifter', label: 'Faste utgifter', Icon: RepeatIcon },
+    { to: '/kategorier', label: 'Kategorier', Icon: TagIcon },
+    { to: '/leverandorer', label: 'Leverandører', Icon: StoreIcon },
+    { to: '/importer', label: 'Importer', Icon: UploadIcon },
+  ],
+}
+
+const bottomLinks = [
+  { to: '/kontoer', label: 'Kontoer', Icon: WalletIcon },
   { to: '/innstillinger', label: 'Innstillinger', Icon: GearIcon },
 ]
 
@@ -28,6 +39,12 @@ const tabLinks = [
 
 export default function Layout() {
   const { profile, household, signOut } = useAuth()
+  const location = useLocation()
+  const childPaths = transactionsGroup.children.map((c) => c.to)
+  const groupActive = location.pathname === transactionsGroup.to || childPaths.includes(location.pathname)
+  const [open, setOpen] = useState(groupActive)
+
+  useEffect(() => { if (groupActive) setOpen(true) }, [groupActive])
 
   return (
     <div className="app-shell">
@@ -41,7 +58,40 @@ export default function Layout() {
           </div>
         </div>
 
-        {sidebarLinks.map((l) => (
+        {topLinks.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <l.Icon width={18} height={18} />
+            {l.label}
+          </NavLink>
+        ))}
+
+        <div className="nav-divider" />
+
+        <div className="nav-group">
+          <NavLink to={transactionsGroup.to} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <transactionsGroup.Icon width={18} height={18} />
+            {transactionsGroup.label}
+          </NavLink>
+          <button
+            type="button"
+            className={`nav-group-toggle${open ? ' open' : ''}`}
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? 'Skjul undermeny' : 'Vis undermeny'}
+          >
+            <ChevronRightIcon width={16} height={16} />
+          </button>
+        </div>
+        {open && (
+          <div className="nav-sublist">
+            {transactionsGroup.children.map((c) => (
+              <NavLink key={c.to} to={c.to} className={({ isActive }) => `nav-sublink${isActive ? ' active' : ''}`}>
+                {c.label}
+              </NavLink>
+            ))}
+          </div>
+        )}
+
+        {bottomLinks.map((l) => (
           <NavLink key={l.to} to={l.to} end={l.end} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             <l.Icon width={18} height={18} />
             {l.label}
