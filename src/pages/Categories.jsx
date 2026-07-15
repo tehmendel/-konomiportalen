@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { Link } from 'react-router-dom'
 import CategoryPicker from '../components/CategoryPicker'
 import RecategorizeModal from '../components/RecategorizeModal'
 
@@ -132,7 +133,10 @@ export default function Categories() {
 
   return (
     <div className="stack">
-      <div className="page-title">Kategorier</div>
+      <div className="page-header">
+        <div className="page-title">Kategorier</div>
+        <Link to="/leverandorer" className="btn btn-ghost btn-sm">🏪 Leverandørregister</Link>
+      </div>
       {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
       <div className="two-col">
         <div className="stack">

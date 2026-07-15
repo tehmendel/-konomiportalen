@@ -20,11 +20,15 @@ Deno.serve(async (req) => {
     if (!file) throw new Error('Ingen fil mottatt')
     const categories = JSON.parse(categoriesJson || '[]') as Category[]
 
-    const categoryList = categories.map((c) => `- ${c.name} (${c.type})`).join('\n')
+    // Kategorinavn listes UTEN type-suffiks, slik at modellen aldri har noe
+    // insentiv til å ekko en dekorert streng som "Dagligvarer (utgift)" tilbake
+    // som category_name — det ville brutt det eksakte navne-matchet under.
+    const incomeNames = categories.filter((c) => c.type === 'inntekt').map((c) => c.name)
+    const expenseNames = categories.filter((c) => c.type === 'utgift').map((c) => c.name)
     const prompt = `Du er en privatøkonomi-assistent. Les denne kontoutskriften/kortoversikten og trekk ut alle transaksjoner.
 
-Tilgjengelige kategorier:
-${categoryList}
+Tilgjengelige inntektskategorier: ${incomeNames.join(', ') || '(ingen)'}
+Tilgjengelige utgiftskategorier: ${expenseNames.join(', ') || '(ingen)'}
 
 Returner KUN et JSON-objekt, ingen annen tekst:
 {"transactions": [{"date": "YYYY-MM-DD", "description": "...", "amount": 123.45, "type": "utgift eller inntekt", "category_name": "eksakt kategorinavn eller null"}]}
@@ -32,7 +36,7 @@ Returner KUN et JSON-objekt, ingen annen tekst:
 Regler: "amount" alltid positivt. "type" er "utgift" hvis penger forlater kontoen/kortet, "inntekt" hvis penger kommer inn.
 Ta med ALLE transaksjoner. Gjør alltid et godt forsøk på "category_name" ut fra butikk-/leverandørnavn og vanlige norske
 forbruksmønstre, selv om du er usikker — bruk kun null i sjeldne unntakstilfeller der beskrivelsen er for generisk til at
-noen kategori er rimelig å anta.`
+noen kategori er rimelig å anta. category_name MÅ være et av navnene over, skrevet nøyaktig likt (uten noe lagt til), eller null.`
 
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
     const anthropic = new Anthropic({ apiKey })
@@ -62,7 +66,9 @@ noen kategori er rimelig å anta.`
     if (!match) throw new Error('AI returnerte ikke strukturert JSON — prøv CSV-eksport i stedet')
 
     const parsed = JSON.parse(match[0]) as { transactions: { date: string; description: string; amount: number; type: string; category_name: string | null }[] }
-    const normalize = (s: string) => s.toLowerCase().trim()
+    // Strips a trailing "(...)" decoration in case the model echoes one back
+    // anyway, so a near-miss still resolves instead of silently returning null.
+    const normalize = (s: string) => s.toLowerCase().trim().replace(/\s*\([^)]*\)\s*$/, '').trim()
     const transactions = parsed.transactions.map((t) => {
       const wanted = t.category_name ? normalize(t.category_name) : null
       const category = wanted ? categories.find((c) => normalize(c.name) === wanted && c.type === t.type) : undefined

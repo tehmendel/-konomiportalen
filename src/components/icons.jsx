@@ -36,3 +36,6 @@ export const RepeatIcon = (p) => (
 export const ReceiptIcon = (p) => (
   <svg viewBox="0 0 24 24" {...base} {...p}><path d="M6 3h12v18l-2.5-1.5L13 21l-2.5-1.5L8 21l-2-1.5V3Z" /><path d="M9 8h6M9 12h6M9 16h4" /></svg>
 )
+export const StoreIcon = (p) => (
+  <svg viewBox="0 0 24 24" {...base} {...p}><path d="M4 9.5 5 4h14l1 5.5" /><path d="M4 9.5a2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0 2.2 2.2 0 0 0 4.4 0" /><path d="M5.5 11v8.5A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V11" /><path d="M10 21v-5.5a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5V21" /></svg>
+)

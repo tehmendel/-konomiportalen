@@ -52,7 +52,7 @@ export async function matchAgainstVendors(householdId, description) {
     .eq('normalized_name', key)
     .maybeSingle()
 
-  if (data && data.confidence > 0.5) {
+  if (data && (data.auto_approve || data.confidence > 0.5)) {
     return { categoryId: data.suggested_category_id, source: 'vendor', vendorId: data.id, confidence: data.confidence }
   }
   return null

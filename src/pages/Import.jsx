@@ -7,6 +7,13 @@ import { formatKr, formatDate } from '../lib/format'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
+const SOURCE_LABELS = {
+  rule: { label: 'Regel', badge: 'badge-accent' },
+  vendor: { label: 'Leverandør', badge: 'badge-green' },
+  ai: { label: 'AI', badge: 'badge-yellow' },
+  manual: { label: 'Manuell', badge: 'badge-neutral' },
+}
+
 async function sha256(file) {
   const buf = await file.arrayBuffer()
   const digest = await crypto.subtle.digest('SHA-256', buf)
@@ -22,6 +29,7 @@ export default function Import() {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const [aiWarning, setAiWarning] = useState('')
   const [importing, setImporting] = useState(false)
   const [done, setDone] = useState(0)
   const fileHashRef = useRef(null)
@@ -96,12 +104,15 @@ export default function Import() {
       for (const [i, tx] of transactions.entries()) {
         const ruleHit = matchAgainstRules(rules, tx.description, tx.type)
         const vendorHit = ruleHit ? null : await matchAgainstVendors(household.id, tx.description)
-        withLocalMatch.push({ ...tx, _id: i, selected: true, category_id: ruleHit?.categoryId || vendorHit?.categoryId || aiPresuggested.get(i) || null })
+        const aiCategoryId = aiPresuggested.get(i) || null
+        const source = ruleHit ? 'rule' : vendorHit ? 'vendor' : aiCategoryId ? 'ai' : null
+        withLocalMatch.push({ ...tx, _id: i, selected: true, category_id: ruleHit?.categoryId || vendorHit?.categoryId || aiCategoryId, source })
       }
 
       // Samme AI-kategorisering for alt som ennå mangler kategori, uansett om
       // det kom fra CSV eller PDF — ingen forskjell i funksjonalitet mellom kildene.
       const unmatched = withLocalMatch.filter((t) => !t.category_id)
+      setAiWarning('')
       if (unmatched.length > 0) {
         setStatus(`${withLocalMatch.length - unmatched.length} kategorisert av regler/leverandørhistorikk — spør AI om ${unmatched.length}…`)
         try {
@@ -117,12 +128,22 @@ export default function Import() {
           if (res.ok) {
             const { suggestions } = await res.json()
             const byId = new Map(suggestions.map((s) => [s.id, s.category_id]))
+            let aiFilled = 0
             for (const row of withLocalMatch) {
-              if (!row.category_id && byId.has(row._id)) row.category_id = byId.get(row._id)
+              if (!row.category_id && byId.has(row._id)) {
+                const catId = byId.get(row._id)
+                if (catId) { row.category_id = catId; row.source = 'ai'; aiFilled++ }
+              }
             }
+            if (aiFilled < unmatched.length) {
+              setAiWarning(`AI foreslo kategori for ${aiFilled} av ${unmatched.length} usikre transaksjoner — resten var for uklare til å gjette på og må settes manuelt.`)
+            }
+          } else {
+            const body = await res.json().catch(() => ({}))
+            setAiWarning(`AI-kategorisering feilet (${body.error || `HTTP ${res.status}`}) — ${unmatched.length} transaksjoner mangler fortsatt kategori.`)
           }
-        } catch {
-          // AI-kategorisering feilet — fortsetter med det regelbasert matching fant
+        } catch (aiErr) {
+          setAiWarning(`AI-kategorisering feilet (${aiErr.message}) — ${unmatched.length} transaksjoner mangler fortsatt kategori.`)
         }
       }
 
@@ -237,6 +258,7 @@ export default function Import() {
       </div>
 
       {status && <div className="text-muted" style={{ fontSize: 13 }}>{status}</div>}
+      {aiWarning && <div style={{ color: 'var(--yellow)', fontSize: 13 }}>⚠ {aiWarning}</div>}
       {error && <div style={{ color: 'var(--red)', fontSize: 13 }}>{error}</div>}
       {done > 0 && (
         <div className="card card-pad" style={{ color: 'var(--green)', fontWeight: 600 }}>✓ {done} transaksjoner importert.</div>
@@ -269,10 +291,18 @@ export default function Import() {
                         <span className={r.type === 'inntekt' ? 'amount-positive' : 'amount-negative'}>{r.type === 'utgift' ? '−' : '+'}{formatKr(r.amount)}</span>
                       </td>
                       <td data-label="Kategori">
-                        <select className="form-select" value={r.category_id || ''} onChange={(e) => updateRow(r._id, 'category_id', e.target.value || null)}>
-                          <option value="">Ingen</option>
-                          {categories.filter((c) => c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                        <div className="row" style={{ flexWrap: 'nowrap' }}>
+                          <select className="form-select" value={r.category_id || ''} onChange={(e) => {
+                            updateRow(r._id, 'category_id', e.target.value || null)
+                            updateRow(r._id, 'source', e.target.value ? 'manual' : null)
+                          }}>
+                            <option value="">Ingen</option>
+                            {categories.filter((c) => c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                          {SOURCE_LABELS[r.source] && (
+                            <span className={`badge ${SOURCE_LABELS[r.source].badge}`} style={{ flexShrink: 0 }}>{SOURCE_LABELS[r.source].label}</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

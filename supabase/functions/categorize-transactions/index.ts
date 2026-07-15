@@ -20,15 +20,19 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ suggestions: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const categoryList = categories.map((c) => `- ${c.name} (${c.type})`).join('\n')
+    // Kategorinavn listes UTEN type-suffiks i prompten, slik at modellen aldri
+    // har noe insentiv til å ekko en dekorert streng som "Dagligvarer (utgift)"
+    // tilbake som category_name — det ville brutt det eksakte navne-matchet under.
+    const incomeNames = categories.filter((c) => c.type === 'inntekt').map((c) => c.name)
+    const expenseNames = categories.filter((c) => c.type === 'utgift').map((c) => c.name)
     const lines = transactions
       .map((t) => `[${t.id}] ${t.type === 'inntekt' ? '+' : '-'} "${t.description}"`)
       .join('\n')
 
     const prompt = `Du er en privatøkonomi-assistent. Kategoriser disse banktransaksjonene for en husstand.
 
-Tilgjengelige kategorier:
-${categoryList}
+Tilgjengelige inntektskategorier: ${incomeNames.join(', ') || '(ingen)'}
+Tilgjengelige utgiftskategorier: ${expenseNames.join(', ') || '(ingen)'}
 
 Transaksjoner:
 ${lines}
@@ -37,6 +41,9 @@ Gjør alltid et godt forsøk på å velge den kategorien som passer best, selv o
 bruk det du vet om butikk-/leverandørnavn, beløpstype og vanlige norske forbruksmønstre til å
 gjette fornuftig. Bruk KUN null i sjeldne unntakstilfeller der beskrivelsen er så generisk
 (f.eks. bare et referansenummer) at ingen kategori er rimelig å anta.
+
+category_name MÅ være et av navnene fra listene over, skrevet nøyaktig likt (uten noe lagt til) —
+eller null i unntakstilfeller.
 
 Returner KUN et JSON-array, ingen annen tekst:
 [{"id": 0, "category_name": "eksakt kategorinavn fra listen, eller null i unntakstilfeller"}]`
@@ -53,7 +60,9 @@ Returner KUN et JSON-array, ingen annen tekst:
     if (!match) throw new Error('AI returnerte ikke gyldig JSON')
 
     const parsed = JSON.parse(match[0]) as { id: number; category_name: string | null }[]
-    const normalize = (s: string) => s.toLowerCase().trim()
+    // Strips a trailing "(...)" decoration in case the model echoes one back
+    // anyway, so a near-miss still resolves instead of silently returning null.
+    const normalize = (s: string) => s.toLowerCase().trim().replace(/\s*\([^)]*\)\s*$/, '').trim()
     const suggestions = parsed.map((item) => {
       const wanted = item.category_name ? normalize(item.category_name) : null
       const category = wanted ? categories.find((c) => normalize(c.name) === wanted) : undefined

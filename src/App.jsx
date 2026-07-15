@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard'
 import Accounts from './pages/Accounts'
 import Transactions from './pages/Transactions'
 import Categories from './pages/Categories'
+import Vendors from './pages/Vendors'
 import Import from './pages/Import'
 import Settings from './pages/Settings'
 import Wealth from './pages/Wealth'
@@ -78,6 +79,7 @@ function AppRoutes() {
         <Route path="kontoer" element={<Accounts />} />
         <Route path="transaksjoner" element={<Transactions />} />
         <Route path="kategorier" element={<Categories />} />
+        <Route path="leverandorer" element={<Vendors />} />
         <Route path="importer" element={<Import />} />
         <Route path="formue" element={<Wealth />} />
         <Route path="investeringer" element={<Investments />} />
