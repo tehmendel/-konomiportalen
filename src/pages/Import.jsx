@@ -21,6 +21,14 @@ async function sha256(file) {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+// Date + amount + type alone is too loose (two different 200 kr purchases on
+// the same day would collide) — folding in a description prefix keeps the
+// match tight while still tolerating minor formatting differences.
+function dupeKey(t) {
+  const desc = (t.description || '').toLowerCase().trim().slice(0, 40)
+  return `${t.date}|${Math.round(Number(t.amount) * 100)}|${t.type}|${desc}`
+}
+
 // Shows what the parser actually extracted for one row — the raw CSV line
 // (or the raw AI-extracted JSON for a PDF import) alongside the parsed
 // fields, so a surprising category/amount can be traced back to its source.
@@ -36,7 +44,7 @@ function RowDetailModal({ row, categoryName, onClose }) {
     { label: 'Søketekst (regelmatching)', value: row.matchText || row.description, mono: true },
     { label: 'Kategoriforslag', value: categoryName || '—' },
     { label: 'Kilde', value: SOURCE_LABELS[row.source]?.label || '—' },
-    { label: 'Status', value: row.duplicate ? 'Duplikat' : 'Ny' },
+    { label: 'Status', value: row.duplicate ? (row.duplicateReason === 'file' ? 'Duplikat (finnes flere ganger i filen)' : 'Duplikat (finnes allerede)') : 'Ny' },
   ]
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -209,10 +217,16 @@ export default function Import() {
         .gte('date', dates[0])
         .lte('date', dates[dates.length - 1])
 
-      const existingKeys = new Set((existingTx || []).map((t) => `${t.date}|${Math.round(Number(t.amount) * 100)}|${t.type}`))
+      const existingKeys = new Set((existingTx || []).map(dupeKey))
+      const seenInFile = new Set()
       const finalRows = withLocalMatch.map((t) => {
-        const key = `${t.date}|${Math.round(t.amount * 100)}|${t.type}`
-        return existingKeys.has(key) ? { ...t, selected: false, duplicate: true } : t
+        const key = dupeKey(t)
+        const isDbDuplicate = existingKeys.has(key)
+        const isFileDuplicate = !isDbDuplicate && seenInFile.has(key)
+        seenInFile.add(key)
+        return (isDbDuplicate || isFileDuplicate)
+          ? { ...t, selected: false, duplicate: true, duplicateReason: isDbDuplicate ? 'db' : 'file' }
+          : t
       })
 
       setRows(finalRows)
@@ -248,7 +262,13 @@ export default function Import() {
   }
 
   function toggleAll(checked) {
-    setRows((prev) => prev.map((r) => ({ ...r, selected: checked })))
+    // Duplikater som ikke er tvunget gjennom holdes utenfor "velg alle" —
+    // de kan ikke importeres uten en bevisst "Importer likevel" først.
+    setRows((prev) => prev.map((r) => ((r.duplicate && !r.forceInclude) ? r : { ...r, selected: checked })))
+  }
+
+  function forceIncludeDuplicate(id) {
+    setRows((prev) => prev.map((r) => (r._id === id ? { ...r, forceInclude: true, selected: true } : r)))
   }
 
   function updateVendorSuggestion(id, field, value) {
@@ -275,7 +295,35 @@ export default function Import() {
 
   async function commitImport() {
     setImporting(true)
-    const selected = rows.filter((r) => r.selected)
+    setError('')
+    let selected = rows.filter((r) => r.selected)
+
+    // Reverifiser mot databasen rett før innsending — dekker tilfeller der
+    // gjennomgangen tok lang tid, eller en annen import kom inn i mellomtiden.
+    // Rader brukeren bevisst har trykket «Importer likevel» på hoppes over,
+    // resten som nå matcher noe eksisterende utelates stille fra importen.
+    const toRecheck = selected.filter((r) => !r.forceInclude)
+    if (toRecheck.length > 0) {
+      const recheckDates = toRecheck.map((t) => t.date).sort()
+      const { data: recheckExisting } = await supabase
+        .from('transactions')
+        .select('date, amount, type, description')
+        .eq('account_id', accountId)
+        .gte('date', recheckDates[0])
+        .lte('date', recheckDates[recheckDates.length - 1])
+      const recheckKeys = new Set((recheckExisting || []).map(dupeKey))
+      const nowDuplicateIds = new Set(toRecheck.filter((r) => recheckKeys.has(dupeKey(r))).map((r) => r._id))
+      if (nowDuplicateIds.size > 0) {
+        selected = selected.filter((r) => !nowDuplicateIds.has(r._id))
+        setRows((prev) => prev.map((r) => (nowDuplicateIds.has(r._id) ? { ...r, selected: false, duplicate: true, duplicateReason: 'db' } : r)))
+        setError(`${nowDuplicateIds.size} transaksjon${nowDuplicateIds.size === 1 ? '' : 'er'} ble utelatt — de fantes allerede da importen ble bekreftet.`)
+      }
+    }
+
+    if (selected.length === 0) {
+      setImporting(false)
+      return
+    }
 
     const { data: importRow } = await supabase.from('bank_imports').upsert({
       account_id: accountId,
@@ -344,8 +392,10 @@ export default function Import() {
     if (inputRef.current) inputRef.current.value = ''
   }
 
+  const selectableRows = rows.filter((r) => !r.duplicate || r.forceInclude)
   const selectedCount = rows.filter((r) => r.selected).length
-  const allSelected = rows.length > 0 && selectedCount === rows.length
+  const allSelected = selectableRows.length > 0 && selectedCount === selectableRows.length
+  const duplicateCount = rows.filter((r) => r.duplicate && !r.forceInclude).length
   const includedVendorCount = vendorSuggestions.filter((v) => v.include).length
 
   return (
@@ -427,11 +477,31 @@ export default function Import() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r._id} className="list-row" style={{ opacity: r.selected ? 1 : 0.4 }}>
-                      <td data-label="Velg"><input type="checkbox" checked={r.selected} onChange={(e) => updateRow(r._id, 'selected', e.target.checked)} /></td>
+                      <td data-label="Velg">
+                        <input
+                          type="checkbox"
+                          checked={r.selected}
+                          disabled={r.duplicate && !r.forceInclude}
+                          title={r.duplicate && !r.forceInclude ? 'Duplikat — kan ikke velges før du trykker «Importer likevel»' : undefined}
+                          onChange={(e) => updateRow(r._id, 'selected', e.target.checked)}
+                        />
+                      </td>
                       <td data-label="Dato" className="text-muted">{formatDate(r.date)}</td>
                       <td className="list-primary">
                         {r.description}
-                        {r.duplicate && <span className="badge badge-yellow" style={{ marginLeft: 6 }}>duplikat</span>}
+                        {r.duplicate && (
+                          <span className="row" style={{ gap: 6, display: 'inline-flex', marginLeft: 6 }}>
+                            <span className="badge badge-yellow">
+                              {r.duplicateReason === 'file' ? 'duplikat i filen' : 'duplikat'}
+                            </span>
+                            {!r.forceInclude && (
+                              <button type="button" className="btn btn-ghost btn-sm" style={{ minHeight: 22, padding: '0 8px', fontSize: 11 }}
+                                onClick={() => forceIncludeDuplicate(r._id)}>
+                                Importer likevel
+                              </button>
+                            )}
+                          </span>
+                        )}
                         {(r.csvType || r.csvSubtype) && (
                           <div className="row" style={{ gap: 4, marginTop: 3, flexWrap: 'wrap' }}>
                             {r.csvType && <span className="badge badge-neutral" style={{ fontSize: 10 }}>{r.csvType}</span>}
