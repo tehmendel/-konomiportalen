@@ -175,6 +175,8 @@ export default function Dashboard() {
                 formatter={(v) => formatKr(v)}
                 cursor={{ fill: 'var(--surface-2)' }}
                 contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
+                labelStyle={{ color: 'var(--text)' }}
+                itemStyle={{ color: 'var(--text)' }}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="inntekt" name="Inntekt" fill={GREEN} radius={[4, 4, 0, 0]} maxBarSize={28} />
@@ -206,6 +208,8 @@ export default function Dashboard() {
                 formatter={(v) => formatKr(v)}
                 cursor={{ fill: 'var(--surface-2)' }}
                 contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
+                labelStyle={{ color: 'var(--text)' }}
+                itemStyle={{ color: 'var(--text)' }}
               />
               <Bar dataKey="total" radius={[0, 4, 4, 0]} maxBarSize={22}>
                 {categoryChartData.map((_, i) => <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />)}

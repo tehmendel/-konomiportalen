@@ -252,6 +252,8 @@ export default function Investments() {
                     formatter={(v) => formatKr(v)}
                     labelFormatter={formatDate}
                     contentStyle={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}
+                    labelStyle={{ color: 'var(--text)' }}
+                    itemStyle={{ color: 'var(--text)' }}
                   />
                   <Line type="monotone" dataKey="value" name="Verdi" stroke="#3987e5" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
