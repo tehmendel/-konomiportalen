@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -23,19 +23,25 @@ function needsMfaChallenge(mfaLevel) {
 
 function Protected({ children }) {
   const { session, household, mfaLevel, loading } = useAuth()
+  const location = useLocation()
   if (loading) return <div className="page-loading">Laster…</div>
-  if (!session) return <Navigate to="/login" replace />
-  if (needsMfaChallenge(mfaLevel)) return <Navigate to="/mfa-verifiser" replace />
+  if (!session) return <Navigate to="/login" state={{ from: location }} replace />
+  if (needsMfaChallenge(mfaLevel)) return <Navigate to="/mfa-verifiser" state={{ from: location }} replace />
   if (!household) return <Navigate to="/onboarding" replace />
   return children
 }
 
 function AppRoutes() {
   const { session, household, mfaLevel, loading } = useAuth()
+  const location = useLocation()
+  // Direkte navigering til en undersside mens man er utlogget skal ta deg
+  // dit etter innlogging (og eventuell tofaktor-verifisering) — ikke bare
+  // dumpe deg på Oversikt og miste hvor du egentlig var på vei.
+  const from = location.state?.from?.pathname || '/'
 
   return (
     <Routes>
-      <Route path="/login" element={session ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/login" element={session ? <Navigate to={from} replace /> : <Login />} />
       <Route path="/tilbakestill-passord" element={session ? <ResetPassword /> : <Navigate to="/login" replace />} />
       <Route
         path="/mfa-verifiser"
@@ -47,7 +53,7 @@ function AppRoutes() {
           ) : needsMfaChallenge(mfaLevel) ? (
             <MfaVerify />
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to={from} replace />
           )
         }
       />
