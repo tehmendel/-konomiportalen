@@ -89,6 +89,21 @@ function cellText(row, idx) {
   return (row[idx] || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+// Straksbetaling-meldinger repeat the counterparty's name that's already
+// shown in the description field ("Fra: <navn> Betalt: <dato> ..." for
+// incoming, "Til: <navn>" for outgoing) — stripping it surfaces the actually
+// new information (payment date, any free text) instead of duplicate text.
+function stripRedundantNamePrefix(notes, description) {
+  if (!notes || !description) return notes
+  const namePart = description.replace(/\s*\(\d+\)\s*$/, '').trim()
+  if (!namePart) return notes
+  const escaped = namePart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return notes
+    .replace(new RegExp(`^Fra:\\s*${escaped}\\s*`, 'i'), '')
+    .replace(new RegExp(`^Til:\\s*${escaped}\\s*$`, 'i'), '')
+    .trim()
+}
+
 function detectSeparator(headerLine) {
   if (headerLine.includes('\t')) return '\t'
   if (headerLine.includes(';')) return ';'
@@ -149,7 +164,7 @@ export function parseBankCsv(rawText) {
     }
 
     const description = cellText(row, idxDesc) || cellText(row, idxMessage) || '(uten beskrivelse)'
-    const notes = cellText(row, idxMessage)
+    const notes = stripRedundantNamePrefix(cellText(row, idxMessage), description)
     const csvType = cellText(row, idxType)
     const csvSubtype = cellText(row, idxSubtype)
 
