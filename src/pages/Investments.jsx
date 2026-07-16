@@ -3,14 +3,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { formatKr, formatDate } from '../lib/format'
-
-const TYPES = [
-  { value: 'fond', label: 'Fond' },
-  { value: 'aksje', label: 'Aksje' },
-  { value: 'etf', label: 'ETF' },
-  { value: 'obligasjon', label: 'Obligasjon' },
-  { value: 'krypto', label: 'Krypto' },
-]
+import { INSTRUMENT_TYPES as TYPES } from '../lib/constants'
 
 const emptyForm = { account_id: '', instrument_name: '', instrument_type: 'fond', quantity: '', avg_price: '', current_price: '' }
 

@@ -2,23 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { formatKr } from '../lib/format'
-
-const ACCOUNT_TYPES = [
-  { value: 'checking', label: 'Brukskonto' },
-  { value: 'savings', label: 'Sparekonto' },
-  { value: 'loan', label: 'Lån' },
-  { value: 'card', label: 'Kredittkort' },
-  { value: 'investment', label: 'Fond/aksjer' },
-  { value: 'child', label: 'Barnekonto' },
-]
-
-const ASSET_CATEGORIES = [
-  { value: 'property', label: 'Bolig', isLiability: false },
-  { value: 'vehicle', label: 'Kjøretøy', isLiability: false },
-  { value: 'pension', label: 'Pensjon', isLiability: false },
-  { value: 'other_asset', label: 'Annen eiendel', isLiability: false },
-  { value: 'other_debt', label: 'Annen gjeld', isLiability: true },
-]
+import { ACCOUNT_TYPES, ASSET_CATEGORIES } from '../lib/constants'
 
 function AssetsCard() {
   const { household, user } = useAuth()

@@ -1,4 +1,5 @@
 import { extractVendorKey } from './categorize'
+import { VENDOR_KEY_MIN_LENGTH, RECURRING_AMOUNT_TOLERANCE, RECURRING_CADENCE_WINDOWS } from './constants'
 
 function median(nums) {
   const sorted = [...nums].sort((a, b) => a - b)
@@ -21,11 +22,8 @@ function cadenceFromGaps(sortedDates) {
   for (let i = 1; i < sortedDates.length; i++) gaps.push(daysBetween(sortedDates[i - 1], sortedDates[i]))
   const gap = median(gaps)
 
-  let label = 'Uregelmessig'
-  if (gap >= 6 && gap <= 8) label = 'Ukentlig'
-  else if (gap >= 25 && gap <= 35) label = 'Månedlig'
-  else if (gap >= 85 && gap <= 100) label = 'Kvartalsvis'
-  else if (gap >= 350 && gap <= 380) label = 'Årlig'
+  const window = RECURRING_CADENCE_WINDOWS.find((w) => gap >= w.min && gap <= w.max)
+  const label = window?.label || 'Uregelmessig'
 
   const last = sortedDates[sortedDates.length - 1]
   const nextDate = new Date(last)
@@ -41,7 +39,7 @@ export function detectRecurringExpenses(transactions) {
   const groups = new Map()
   for (const t of transactions) {
     const key = extractVendorKey(t.description)
-    if (key.length < 3) continue
+    if (key.length < VENDOR_KEY_MIN_LENGTH) continue
     if (!groups.has(key)) groups.set(key, [])
     groups.get(key).push(t)
   }
@@ -55,7 +53,7 @@ export function detectRecurringExpenses(transactions) {
     const med = median(amounts)
     if (med <= 0) continue
 
-    const consistent = txs.filter((t) => Math.abs(Number(t.amount) - med) / med <= 0.2)
+    const consistent = txs.filter((t) => Math.abs(Number(t.amount) - med) / med <= RECURRING_AMOUNT_TOLERANCE)
     if (consistent.length < 2) continue
 
     const sorted = [...txs].sort((a, b) => a.date.localeCompare(b.date))

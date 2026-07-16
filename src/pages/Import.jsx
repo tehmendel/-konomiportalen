@@ -5,6 +5,7 @@ import { readFileAsText, parseBankCsv } from '../lib/bankCsv'
 import { fetchActiveRules, matchAgainstRules, matchAgainstVendors, learnFromOutcome, extractVendorKey } from '../lib/categorize'
 import { formatKr, formatDate } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
+import { VENDOR_KEY_MIN_LENGTH, RULE_SUGGESTION_MIN_COUNT } from '../lib/constants'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -242,13 +243,13 @@ export default function Import() {
       for (const t of finalRows) {
         if (t.duplicate || !t.category_id) continue
         const key = extractVendorKey(t.description)
-        if (key.length < 3 || knownKeys.has(key)) continue
+        if (key.length < VENDOR_KEY_MIN_LENGTH || knownKeys.has(key)) continue
         if (!vendorMap.has(key)) vendorMap.set(key, { key, suggested_category_id: t.category_id, transaction_count: 0, total_amount: 0 })
         const v = vendorMap.get(key)
         v.transaction_count++
         v.total_amount += Number(t.amount)
       }
-      setVendorSuggestions([...vendorMap.values()].map((v, i) => ({ ...v, _id: i, include: v.transaction_count >= 2 })))
+      setVendorSuggestions([...vendorMap.values()].map((v, i) => ({ ...v, _id: i, include: v.transaction_count >= RULE_SUGGESTION_MIN_COUNT })))
     } catch (err) {
       setError(err.message || 'Noe gikk galt under lesing av filen')
       setStatus('')

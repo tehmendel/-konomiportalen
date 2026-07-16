@@ -1,4 +1,12 @@
 import { supabase } from './supabaseClient'
+import {
+  VENDOR_KEY_MIN_LENGTH,
+  VENDOR_CONFIDENCE_AUTO_MATCH_THRESHOLD,
+  VENDOR_CONFIDENCE_INCREMENT,
+  VENDOR_CONFIDENCE_MAX,
+  VENDOR_CONFIDENCE_FRESH,
+  VENDOR_CONFIDENCE_RESET_ON_OVERRIDE,
+} from './constants'
 
 function normalizeText(value) {
   return (value || '').toLowerCase().trim()
@@ -43,7 +51,7 @@ export function matchAgainstRules(rules, description, type) {
 
 export async function matchAgainstVendors(householdId, description) {
   const key = extractVendorKey(description)
-  if (key.length < 3) return null
+  if (key.length < VENDOR_KEY_MIN_LENGTH) return null
 
   const { data } = await supabase
     .from('vendors')
@@ -52,7 +60,7 @@ export async function matchAgainstVendors(householdId, description) {
     .eq('normalized_name', key)
     .maybeSingle()
 
-  if (data && (data.auto_approve || data.confidence > 0.5)) {
+  if (data && (data.auto_approve || data.confidence > VENDOR_CONFIDENCE_AUTO_MATCH_THRESHOLD)) {
     return { categoryId: data.suggested_category_id, source: 'vendor', vendorId: data.id, confidence: data.confidence }
   }
   return null
@@ -88,7 +96,7 @@ export async function learnFromOutcome({ householdId, description, suggestedCate
   })
 
   const key = extractVendorKey(description)
-  if (key.length < 3) return
+  if (key.length < VENDOR_KEY_MIN_LENGTH) return
 
   const { data: existing } = await supabase
     .from('vendors')
@@ -100,7 +108,7 @@ export async function learnFromOutcome({ householdId, description, suggestedCate
   if (existing && existing.suggested_category_id === finalCategoryId) {
     await supabase.from('vendors').update({
       transaction_count: existing.transaction_count + 1,
-      confidence: Math.min(0.99, Number(existing.confidence) + 0.2),
+      confidence: Math.min(VENDOR_CONFIDENCE_MAX, Number(existing.confidence) + VENDOR_CONFIDENCE_INCREMENT),
       last_seen: new Date().toISOString().slice(0, 10),
     }).eq('id', existing.id)
   } else if (existing) {
@@ -109,7 +117,7 @@ export async function learnFromOutcome({ householdId, description, suggestedCate
     await supabase.from('vendors').update({
       suggested_category_id: finalCategoryId,
       transaction_count: existing.transaction_count + 1,
-      confidence: 0.6,
+      confidence: VENDOR_CONFIDENCE_RESET_ON_OVERRIDE,
       last_seen: new Date().toISOString().slice(0, 10),
     }).eq('id', existing.id)
   } else {
@@ -118,7 +126,7 @@ export async function learnFromOutcome({ householdId, description, suggestedCate
       normalized_name: key,
       suggested_category_id: finalCategoryId,
       transaction_count: 1,
-      confidence: 0.7,
+      confidence: VENDOR_CONFIDENCE_FRESH,
       last_seen: new Date().toISOString().slice(0, 10),
     })
   }

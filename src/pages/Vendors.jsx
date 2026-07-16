@@ -5,15 +5,18 @@ import { matchAgainstRules } from '../lib/categorize'
 import { formatDate } from '../lib/format'
 import CategoryPicker from '../components/CategoryPicker'
 import MergeVendorModal from '../components/MergeVendorModal'
+import {
+  RULE_SUGGESTION_MIN_CONFIDENCE,
+  RULE_SUGGESTION_MIN_COUNT,
+  VENDOR_CONFIDENCE_INCREMENT,
+  VENDOR_CONFIDENCE_RESET_ON_OVERRIDE,
+} from '../lib/constants'
 
 function confidenceColor(c) {
   if (c >= 0.9) return 'var(--green)'
   if (c >= 0.7) return 'var(--yellow)'
   return 'var(--red)'
 }
-
-const RULE_SUGGESTION_MIN_CONFIDENCE = 0.85
-const RULE_SUGGESTION_MIN_COUNT = 2
 
 export default function Vendors() {
   const { household } = useAuth()
@@ -230,7 +233,7 @@ export default function Vendors() {
 
       <div className="card card-pad" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
         <strong style={{ color: 'var(--text)' }}>Auto-godkjenn:</strong> når aktivert brukes leverandørens kategoriforslag automatisk ved import, uansett konfidens.
-        Konfidensen øker med 20 prosentpoeng hver gang forslaget bekreftes riktig, og resettes til 60% når det overstyres.
+        Konfidensen øker med {(VENDOR_CONFIDENCE_INCREMENT * 100).toFixed(0)} prosentpoeng hver gang forslaget bekreftes riktig, og resettes til {(VENDOR_CONFIDENCE_RESET_ON_OVERRIDE * 100).toFixed(0)}% når det overstyres.
       </div>
     </div>
   )

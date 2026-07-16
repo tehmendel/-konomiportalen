@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { VENDOR_CONFIDENCE_MAX } from '../lib/constants'
 
 // Absorbs a duplicate vendor (e.g. two slightly different normalized names
 // for the same merchant) into the primary — combining their learned stats
@@ -20,7 +21,7 @@ export default function MergeVendorModal({ primary, vendors, onClose, onMerged }
 
     const { error: updateError } = await supabase.from('vendors').update({
       transaction_count: primary.transaction_count + absorb.transaction_count,
-      confidence: Math.min(0.99, Math.max(Number(primary.confidence), Number(absorb.confidence))),
+      confidence: Math.min(VENDOR_CONFIDENCE_MAX, Math.max(Number(primary.confidence), Number(absorb.confidence))),
       last_seen: (primary.last_seen || '') > (absorb.last_seen || '') ? primary.last_seen : absorb.last_seen,
       auto_approve: primary.auto_approve || absorb.auto_approve,
       updated_at: new Date().toISOString(),

@@ -126,8 +126,6 @@ export function parseBankCsv(rawText) {
   const idxStatus = headers.findIndex((h) => h === 'status')
   const idxDesc = columnIndex('beskrivelse')
   const idxDate = columnIndex('bokført dato') >= 0 ? columnIndex('bokført dato') : columnIndex('utført dato')
-  const idxAccount = headers.findIndex((h) => h === 'kontonummer' || (h.includes('konto') && !h.includes('inn') && !h.includes('ut')))
-  const idxBalance = columnIndex('saldo')
   const idxMessage = columnIndex('melding/kid/fakt.nr')
   const idxType = headers.findIndex((h) => h === 'type')
   const idxSubtype = headers.findIndex((h) => h === 'undertype')
@@ -137,8 +135,6 @@ export function parseBankCsv(rawText) {
   }
 
   const transactions = []
-  let accountNumber = null
-  let lastBalance = null
 
   for (let i = 1; i < allRows.length; i++) {
     const row = allRows[i]
@@ -153,15 +149,6 @@ export function parseBankCsv(rawText) {
 
     const date = parseDate(cellText(row, idxDate))
     if (!date) continue
-
-    if (idxAccount >= 0 && !accountNumber) {
-      const candidate = cellText(row, idxAccount).replace(/\s/g, '')
-      if (/^\d{11}$/.test(candidate)) accountNumber = candidate
-    }
-    if (idxBalance >= 0) {
-      const balance = parseAmount(cellText(row, idxBalance))
-      if (balance !== 0) lastBalance = balance
-    }
 
     const description = cellText(row, idxDesc) || cellText(row, idxMessage) || '(uten beskrivelse)'
     const notes = stripRedundantNamePrefix(cellText(row, idxMessage), description)
@@ -183,5 +170,5 @@ export function parseBankCsv(rawText) {
     })
   }
 
-  return { transactions, accountNumber, lastBalance, error: null }
+  return { transactions, error: null }
 }

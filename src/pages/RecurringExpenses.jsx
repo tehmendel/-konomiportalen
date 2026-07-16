@@ -12,8 +12,12 @@ export default function RecurringExpenses() {
 
   async function load() {
     setLoading(true)
+    // No explicit .limit(): the default cap was 1000, which a household's
+    // combined transaction history can realistically exceed after a few
+    // years — silently dropping older rows from recurring-expense detection
+    // with no error. 20000 comfortably covers decades of household activity.
     const [{ data: tx }, { data: dis }] = await Promise.all([
-      supabase.from('transactions').select('id, date, description, amount, accounts(display_name)').eq('type', 'utgift').order('date', { ascending: false }).limit(1000),
+      supabase.from('transactions').select('id, date, description, amount, accounts(display_name)').eq('type', 'utgift').order('date', { ascending: false }).limit(20000),
       supabase.from('dismissed_recurring').select('vendor_key'),
     ])
     setTransactions(tx || [])

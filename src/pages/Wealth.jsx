@@ -2,19 +2,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { formatKr } from '../lib/format'
+import { WEALTH_CATEGORY_LABELS as LABELS, WEALTH_POSITIVE_CATEGORIES as POSITIVE_CATEGORIES } from '../lib/constants'
 
 const COLORS = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d95926']
-
-const LABELS = {
-  bank: 'Bankinnskudd',
-  investment: 'Verdipapirer',
-  property: 'Bolig',
-  vehicle: 'Kjøretøy',
-  pension: 'Pensjon',
-  other_asset: 'Annen eiendel',
-}
-
-const POSITIVE_CATEGORIES = ['bank', 'investment', 'property', 'vehicle', 'pension', 'other_asset']
 
 function daysAgo(n) {
   const d = new Date()
