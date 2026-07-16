@@ -71,7 +71,7 @@ export default function Onboarding() {
           </div>
           <div className="form-group">
             <label className="form-label">Navn på husstanden</label>
-            <input className="form-input" required placeholder="F.eks. Familien Bøe" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} />
+            <input className="form-input" required placeholder="F.eks. Vår husstand" value={householdName} onChange={(e) => setHouseholdName(e.target.value)} />
           </div>
           {error && <div style={{ color: 'var(--red)', fontSize: 13, marginBottom: 'var(--space-3)' }}>{error}</div>}
           <button className="btn btn-primary btn-block" type="submit" disabled={busy}>
