@@ -468,6 +468,7 @@ export default function Import() {
                     </th>
                     <th>Dato</th>
                     <th>Beskrivelse</th>
+                    <th>Melding / KID / Faktura</th>
                     <th className="text-right">Beløp</th>
                     <th>Kategori</th>
                     <th style={{ width: 44 }} />
@@ -508,6 +509,9 @@ export default function Import() {
                             {r.csvSubtype && <span className="badge badge-neutral" style={{ fontSize: 10 }}>{r.csvSubtype}</span>}
                           </div>
                         )}
+                      </td>
+                      <td data-label="Melding / KID / Faktura" className="text-muted" style={{ fontSize: 12, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.notes || undefined}>
+                        {r.notes || '—'}
                       </td>
                       <td data-label="Beløp" className="text-right">
                         <span className={r.type === 'inntekt' ? 'amount-positive' : 'amount-negative'}>{r.type === 'utgift' ? '−' : '+'}{formatKr(r.amount)}</span>
