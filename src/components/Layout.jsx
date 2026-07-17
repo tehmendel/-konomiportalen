@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Avatar from './Avatar'
 import { Logo } from './Logo'
-import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon, StoreIcon, ChevronRightIcon } from './icons'
+import { HomeIcon, ListIcon, WalletIcon, UploadIcon, GearIcon, TagIcon, LogoutIcon, CoinsIcon, TrendingUpIcon, RepeatIcon, ReceiptIcon, StoreIcon, ChevronRightIcon, ShieldIcon } from './icons'
 import { APP_VERSION } from '../version'
 
 const topLinks = [
   { to: '/', label: 'Oversikt', end: true, Icon: HomeIcon },
   { to: '/formue', label: 'Formue', Icon: CoinsIcon },
   { to: '/investeringer', label: 'Investeringer', Icon: TrendingUpIcon },
+  { to: '/pensjon', label: 'Pensjon', Icon: ShieldIcon },
   { to: '/skatt', label: 'Skatt', Icon: ReceiptIcon },
 ]
 

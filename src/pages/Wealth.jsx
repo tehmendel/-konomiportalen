@@ -66,7 +66,14 @@ export default function Wealth() {
     run()
   }, [household?.id])
 
-  const byCategory = Object.fromEntries(rows.map((r) => [r.category, Number(r.total_amount)]))
+  // reduce (not Object.fromEntries): household_net_worth() can return the same
+  // category from more than one source now — e.g. 'pension' is summed from both
+  // manually entered assets AND Storebrand-style pension holdings — so duplicate
+  // category rows must add up, not silently overwrite each other.
+  const byCategory = rows.reduce((acc, r) => {
+    acc[r.category] = (acc[r.category] || 0) + Number(r.total_amount)
+    return acc
+  }, {})
   const bank = byCategory.bank || 0
   const investment = byCategory.investment || 0
   const property = byCategory.property || 0
