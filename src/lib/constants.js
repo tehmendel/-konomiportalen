@@ -32,7 +32,10 @@ export const WEALTH_CATEGORY_LABELS = {
   ...Object.fromEntries(ASSET_CATEGORIES.map((c) => [c.value, c.label])),
 }
 
-export const WEALTH_POSITIVE_CATEGORIES = ['bank', 'investment', 'property', 'vehicle', 'pension', 'other_asset']
+// 'pension' er bevisst utelatt: pensjon telles ikke med i formueberegningen
+// (household_net_worth() returnerer aldri denne kategorien) — sporing skjer
+// på den dedikerte Pensjon-siden i stedet.
+export const WEALTH_POSITIVE_CATEGORIES = ['bank', 'investment', 'property', 'vehicle', 'other_asset']
 
 // Mirrors holdings.instrument_type CHECK constraint.
 export const INSTRUMENT_TYPES = [

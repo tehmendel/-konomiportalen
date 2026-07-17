@@ -78,14 +78,13 @@ export default function Wealth() {
   const investment = byCategory.investment || 0
   const property = byCategory.property || 0
   const vehicle = byCategory.vehicle || 0
-  const pension = byCategory.pension || 0
   const otherAsset = byCategory.other_asset || 0
   const loan = byCategory.loan || 0
   const otherDebt = byCategory.other_debt || 0
   const debt = loan + otherDebt
 
   const netWorth = rows.reduce((sum, r) => sum + Number(r.total_amount), 0)
-  const positiveTotal = bank + investment + property + vehicle + pension + otherAsset
+  const positiveTotal = bank + investment + property + vehicle + otherAsset
 
   const distribution = POSITIVE_CATEGORIES
     .map((cat, i) => ({ key: cat, label: LABELS[cat], value: byCategory[cat] || 0, color: COLORS[i] }))
@@ -99,7 +98,7 @@ export default function Wealth() {
     { label: 'Verdipapirer', value: investment, icon: '📈', chip: 'icon-chip-green' },
     { label: 'Bolig', value: property, icon: '🏠', chip: 'icon-chip-purple' },
     { label: 'Gjeld', value: -debt, icon: '🏦', chip: 'icon-chip-red' },
-    { label: 'Pensjon/annet', value: pension + vehicle + otherAsset, icon: '📦', chip: 'icon-chip-yellow' },
+    { label: 'Kjøretøy/annet', value: vehicle + otherAsset, icon: '📦', chip: 'icon-chip-yellow' },
     { label: 'Mnd. kontantstrøm', value: cashFlow, icon: '💸', chip: cashFlow >= 0 ? 'icon-chip-green' : 'icon-chip-red' },
   ]
 
