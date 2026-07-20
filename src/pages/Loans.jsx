@@ -14,31 +14,51 @@ function normalizeDigits(s) {
   return (s || '').replace(/\D/g, '')
 }
 
-// Standard annuitetslån-formel: saldo etter n måneder gitt fast rente og fast
-// terminbeløp. r=0 (rentefritt) håndteres som ren lineær nedbetaling.
-function amortizedBalance(principal, annualRatePct, monthlyPayment, monthsElapsed) {
-  if (monthsElapsed <= 0) return principal
-  const r = (annualRatePct || 0) / 100 / 12
-  if (r === 0) return Math.max(0, principal - monthlyPayment * monthsElapsed)
-  const factor = Math.pow(1 + r, monthsElapsed)
-  return Math.max(0, principal * factor - monthlyPayment * (factor - 1) / r)
-}
-
-// Løser samme formel for n (antall gjenværende terminer) gitt DAGENS saldo —
-// brukes til "forventet nedbetalt"-estimatet, uavhengig av opprinnelig plan.
-function monthsRemaining(balance, annualRatePct, monthlyPayment) {
-  if (!monthlyPayment || monthlyPayment <= 0 || !balance || balance <= 0) return null
-  const r = (annualRatePct || 0) / 100 / 12
-  if (r === 0) return Math.ceil(balance / monthlyPayment)
-  const inner = 1 - (r * balance) / monthlyPayment
-  if (inner <= 0) return null // terminbeløpet dekker ikke renten — nedbetales aldri
-  return Math.ceil(-Math.log(inner) / Math.log(1 + r))
-}
-
 function addMonths(date, months) {
   const d = new Date(date)
   d.setMonth(d.getMonth() + months)
   return d.toISOString().slice(0, 10)
+}
+
+function monthsBetween(fromDate, toDate) {
+  const a = new Date(fromDate)
+  const b = new Date(toDate)
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
+}
+
+function isInGracePeriod(dateStr, gracePeriods) {
+  return gracePeriods.some((gp) => dateStr >= gp.start_date && dateStr <= gp.end_date)
+}
+
+// Simulerer saldoutvikling måned for måned fra `fromDate`/`fromBalance`, og tar
+// hensyn til avdragsfrie perioder (kun renter betales, saldoen holdes uendret
+// i stedet for å avdras normalt). Erstatter den lukkede annuitetsformelen med
+// en trinnvis simulering siden avdragsfrihet gjør nedbetalingen sti-avhengig.
+// Returnerer punktene fram til saldo <= 0, eller maxMonths hvis den aldri når 0.
+function simulateBalance(fromBalance, fromDate, annualRatePct, monthlyPayment, gracePeriods, maxMonths) {
+  const r = (annualRatePct || 0) / 100 / 12
+  let balance = fromBalance
+  const points = [{ date: fromDate, balance }]
+  for (let m = 1; m <= maxMonths; m++) {
+    const date = addMonths(fromDate, m)
+    const interest = balance * r
+    if (!isInGracePeriod(date, gracePeriods)) {
+      balance = Math.max(0, balance - (monthlyPayment - interest))
+    }
+    points.push({ date, balance })
+    if (balance <= 0) break
+  }
+  return points
+}
+
+// Gjenværende måneder til nedbetalt, fra DAGENS saldo — tar hensyn til
+// eventuelle pågående/fremtidige avdragsfrie perioder. null = nedbetales
+// aldri innenfor 50 år (terminbeløpet dekker trolig ikke renten).
+function monthsRemaining(balance, annualRatePct, monthlyPayment, gracePeriods) {
+  if (!monthlyPayment || monthlyPayment <= 0 || !balance || balance <= 0) return null
+  const points = simulateBalance(balance, new Date().toISOString().slice(0, 10), annualRatePct, monthlyPayment, gracePeriods, 600)
+  const last = points[points.length - 1]
+  return last.balance <= 0 ? points.length - 1 : null
 }
 
 export default function Loans() {
@@ -46,6 +66,7 @@ export default function Loans() {
   const [accounts, setAccounts] = useState([])
   const [loans, setLoans] = useState([])
   const [snapshots, setSnapshots] = useState([])
+  const [gracePeriods, setGracePeriods] = useState([])
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -76,14 +97,15 @@ export default function Loans() {
       // Best-effort: friskt snapshot av dagens saldo hver gang siden besøkes,
       // slik at historikken bygges opp selv om saldoen sjelden endres manuelt.
       await Promise.all(loanIds.map((id) => supabase.rpc('record_loan_balance_snapshot', { p_loan_id: id })))
-      const { data: snaps } = await supabase
-        .from('loan_balance_snapshots')
-        .select('loan_id, snapshot_date, balance')
-        .in('loan_id', loanIds)
-        .order('snapshot_date', { ascending: true })
+      const [{ data: snaps }, { data: grace }] = await Promise.all([
+        supabase.from('loan_balance_snapshots').select('loan_id, snapshot_date, balance').in('loan_id', loanIds).order('snapshot_date', { ascending: true }),
+        supabase.from('loan_grace_periods').select('*').in('loan_id', loanIds).order('start_date', { ascending: true }),
+      ])
       setSnapshots(snaps || [])
+      setGracePeriods(grace || [])
     } else {
       setSnapshots([])
+      setGracePeriods([])
     }
     setLoading(false)
   }
@@ -183,6 +205,16 @@ export default function Loans() {
     load()
   }
 
+  async function addGracePeriod(loanId, period) {
+    await supabase.from('loan_grace_periods').insert({ loan_id: loanId, ...period })
+    load()
+  }
+
+  async function removeGracePeriod(id) {
+    await supabase.from('loan_grace_periods').delete().eq('id', id)
+    load()
+  }
+
   const linkedAccountIds = new Set(loans.map((l) => l.account_id))
   const unlinkedAccounts = accounts.filter((a) => !linkedAccountIds.has(a.id))
 
@@ -195,6 +227,16 @@ export default function Loans() {
     }
     return byLoan
   }, [snapshots])
+
+  const gracePeriodsByLoan = useMemo(() => {
+    const byLoan = new Map()
+    for (const g of gracePeriods) {
+      const list = byLoan.get(g.loan_id) || []
+      list.push(g)
+      byLoan.set(g.loan_id, list)
+    }
+    return byLoan
+  }, [gracePeriods])
 
   const totalDebt = accounts.reduce((sum, a) => sum + (Number(a.balance) || 0), 0)
   const totalMonthly = loans.reduce((sum, l) => sum + (Number(l.monthly_payment) || 0), 0)
@@ -347,9 +389,12 @@ export default function Loans() {
 
           return <LoanCard key={loan.id} loan={loan} account={account}
             snapshots={snapshotsByLoan.get(loan.id) || []}
+            gracePeriods={gracePeriodsByLoan.get(loan.id) || []}
             transactions={transactions}
             onEdit={() => startEditLoan(loan)}
             onRemove={() => removeLoanDetails(loan)}
+            onAddGracePeriod={(period) => addGracePeriod(loan.id, period)}
+            onRemoveGracePeriod={removeGracePeriod}
             balanceEditing={balanceEditingId === loan.id}
             balanceValue={balanceValue}
             onStartBalanceEdit={() => { setBalanceEditingId(loan.id); setBalanceValue(String(account.balance ?? '')) }}
@@ -362,8 +407,24 @@ export default function Loans() {
   )
 }
 
-function LoanCard({ loan, account, snapshots, transactions, onEdit, onRemove, balanceEditing, balanceValue, onStartBalanceEdit, onBalanceValueChange, onSaveBalance }) {
+const emptyGracePeriodForm = { start_date: '', end_date: '', note: '' }
+
+function LoanCard({
+  loan, account, snapshots, gracePeriods, transactions, onEdit, onRemove,
+  onAddGracePeriod, onRemoveGracePeriod,
+  balanceEditing, balanceValue, onStartBalanceEdit, onBalanceValueChange, onSaveBalance,
+}) {
   const balance = Number(account.balance) || 0
+  const [showGraceForm, setShowGraceForm] = useState(false)
+  const [graceForm, setGraceForm] = useState(emptyGracePeriodForm)
+
+  function submitGracePeriod(e) {
+    e.preventDefault()
+    if (!graceForm.start_date || !graceForm.end_date) return
+    onAddGracePeriod({ start_date: graceForm.start_date, end_date: graceForm.end_date, note: graceForm.note.trim() || null })
+    setGraceForm(emptyGracePeriodForm)
+    setShowGraceForm(false)
+  }
 
   const matched = useMemo(() => {
     const normalized = normalizeDigits(loan.payment_account_number)
@@ -395,29 +456,25 @@ function LoanCard({ loan, account, snapshots, transactions, onEdit, onRemove, ba
     return Array.from(byMonth.values())
   }, [matched])
 
-  const remainingMonths = monthsRemaining(balance, loan.interest_rate, loan.monthly_payment)
+  const remainingMonths = monthsRemaining(balance, loan.interest_rate, loan.monthly_payment, gracePeriods)
   const payoffDate = remainingMonths != null ? addMonths(new Date(), remainingMonths) : null
 
   const chartData = useMemo(() => {
     const byDate = new Map()
     if (loan.original_principal && loan.start_date && loan.monthly_payment) {
-      const start = new Date(loan.start_date)
-      const now = new Date()
-      const monthsSinceStart = Math.max(0, (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()))
-      const step = monthsSinceStart > 60 ? Math.ceil(monthsSinceStart / 60) : 1
-      for (let m = 0; m <= monthsSinceStart; m += step) {
-        const d = new Date(start.getFullYear(), start.getMonth() + m, 1)
-        const planned = amortizedBalance(Number(loan.original_principal), Number(loan.interest_rate), Number(loan.monthly_payment), m)
-        const key = d.toISOString().slice(0, 10)
-        byDate.set(key, { ...(byDate.get(key) || {}), date: key, planned })
-        if (planned <= 0) break
-      }
+      const monthsSinceStart = Math.max(0, monthsBetween(loan.start_date, new Date().toISOString().slice(0, 10)))
+      const planned = simulateBalance(Number(loan.original_principal), loan.start_date, Number(loan.interest_rate), Number(loan.monthly_payment), gracePeriods, monthsSinceStart)
+      const step = planned.length > 60 ? Math.ceil(planned.length / 60) : 1
+      planned.forEach((p, i) => {
+        if (i % step !== 0 && i !== planned.length - 1) return
+        byDate.set(p.date, { ...(byDate.get(p.date) || {}), date: p.date, planned: p.balance })
+      })
     }
     for (const s of snapshots) {
       byDate.set(s.snapshot_date, { ...(byDate.get(s.snapshot_date) || {}), date: s.snapshot_date, actual: Number(s.balance) })
     }
     return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date))
-  }, [snapshots, loan])
+  }, [snapshots, loan, gracePeriods])
 
   return (
     <div className="card">
@@ -503,6 +560,52 @@ function LoanCard({ loan, account, snapshots, transactions, onEdit, onRemove, ba
           Saldohistorikk bygges opp etter hvert som du besøker siden — fyll inn opprinnelig lånebeløp, rente og terminbeløp for å også se en planlagt nedbetalingskurve.
         </div>
       )}
+
+      <div className="card-pad" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="row-between" style={{ marginBottom: 'var(--space-2)' }}>
+          <div className="section-title" style={{ marginBottom: 0 }}>Avdragsfrie perioder</div>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowGraceForm((s) => !s)}>{showGraceForm ? 'Avbryt' : '+ Legg til'}</button>
+        </div>
+
+        {showGraceForm && (
+          <form onSubmit={submitGracePeriod} style={{ marginBottom: 'var(--space-3)' }}>
+            <div className="row">
+              <div className="form-group grow">
+                <label className="form-label">Fra</label>
+                <input className="form-input" type="date" required value={graceForm.start_date}
+                  onChange={(e) => setGraceForm({ ...graceForm, start_date: e.target.value })} />
+              </div>
+              <div className="form-group grow">
+                <label className="form-label">Til</label>
+                <input className="form-input" type="date" required value={graceForm.end_date}
+                  onChange={(e) => setGraceForm({ ...graceForm, end_date: e.target.value })} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Notat (valgfritt)</label>
+              <input className="form-input" placeholder="F.eks. Foreldrepermisjon" value={graceForm.note}
+                onChange={(e) => setGraceForm({ ...graceForm, note: e.target.value })} />
+            </div>
+            <button className="btn btn-primary btn-sm" type="submit">Lagre periode</button>
+          </form>
+        )}
+
+        {gracePeriods.length === 0 ? (
+          <div className="text-muted" style={{ fontSize: 12 }}>Ingen avdragsfrie perioder registrert — planlagt nedbetalingskurve regnes med jevnt avdrag hele veien.</div>
+        ) : (
+          <div className="stack" style={{ gap: 6 }}>
+            {gracePeriods.map((g) => (
+              <div key={g.id} className="row-between" style={{ fontSize: 13 }}>
+                <div>
+                  <span style={{ fontWeight: 600 }}>{formatDate(g.start_date)} – {formatDate(g.end_date)}</span>
+                  {g.note && <span className="text-muted"> · {g.note}</span>}
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => onRemoveGracePeriod(g.id)}>Fjern</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="card-pad" style={{ borderTop: '1px solid var(--border)' }}>
         <div className="row-between" style={{ marginBottom: 'var(--space-2)' }}>
